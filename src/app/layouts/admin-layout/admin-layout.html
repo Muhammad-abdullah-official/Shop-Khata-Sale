@@ -1,0 +1,99 @@
+<div class="flex h-screen overflow-hidden">
+  <!-- ============ Sidebar ============ -->
+  <aside
+    class="flex flex-col border-r border-line bg-surface transition-all duration-200"
+    [class.w-64]="sidebarOpen()"
+    [class.w-[72px]]="!sidebarOpen()"
+  >
+    <!-- brand + collapse toggle -->
+    <div class="flex h-16 items-center gap-2.5 border-b border-line px-4">
+      <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand text-white">
+        <app-icon name="store" [size]="18" />
+      </span>
+      @if (sidebarOpen()) {
+        <div class="flex-1 leading-tight">
+          <div class="text-sm font-semibold text-ink">Shop Manager</div>
+          <div class="text-xs text-muted">{{ roleLabel() }}</div>
+        </div>
+        <button
+          (click)="toggleSidebar()"
+          class="grid h-8 w-8 place-items-center rounded-lg text-faint transition hover:bg-canvas hover:text-ink"
+          aria-label="Collapse sidebar"
+          title="Collapse"
+        >
+          <app-icon name="collapse" [size]="18" />
+        </button>
+      }
+    </div>
+
+    <!-- nav -->
+    <nav class="flex-1 space-y-0.5 overflow-y-auto p-3">
+      @for (item of nav(); track item.path) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="bg-brand! text-white! font-medium"
+          [title]="item.label"
+          class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted transition hover:bg-canvas hover:text-ink"
+          [class.justify-center]="!sidebarOpen()"
+        >
+          <app-icon [name]="item.icon" [size]="18" />
+          @if (sidebarOpen()) {
+            <span>{{ item.label }}</span>
+          }
+        </a>
+      }
+    </nav>
+
+    <!-- footer -->
+    <div class="border-t border-line p-3">
+      <div class="flex items-center gap-2.5 rounded-lg px-2 py-2" [class.justify-center]="!sidebarOpen()">
+        <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ink text-xs font-semibold text-white">
+          {{ auth.currentUser()?.name?.charAt(0) || 'O' }}
+        </span>
+        @if (sidebarOpen()) {
+          <div class="min-w-0 flex-1 leading-tight">
+            <div class="truncate text-sm font-medium text-ink">{{ auth.currentUser()?.name || 'Owner' }}</div>
+            <div class="truncate text-xs text-muted">{{ auth.currentUser()?.email || 'owner@shop.pk' }}</div>
+          </div>
+          <button
+            (click)="logout()"
+            class="grid h-8 w-8 place-items-center rounded-lg text-faint transition hover:bg-canvas hover:text-danger"
+            title="Logout"
+            aria-label="Logout"
+          >
+            <app-icon name="logout" [size]="17" />
+          </button>
+        }
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ Main ============ -->
+  <div class="flex flex-1 flex-col overflow-hidden">
+    <!-- topbar -->
+    <header class="flex h-16 items-center justify-between border-b border-line bg-surface px-5">
+      <button
+        (click)="toggleSidebar()"
+        class="grid h-9 w-9 place-items-center rounded-lg text-muted transition hover:bg-canvas hover:text-ink"
+        aria-label="Toggle sidebar"
+        title="Menu"
+      >
+        <app-icon name="menu" />
+      </button>
+      <div class="flex items-center gap-4">
+        <div class="hidden text-right sm:block">
+          <div class="text-sm font-medium text-ink">Today</div>
+          <div class="text-xs text-muted">3 July 2026</div>
+        </div>
+        <button class="grid h-9 w-9 place-items-center rounded-lg text-muted transition hover:bg-canvas hover:text-ink" aria-label="Notifications">
+          <app-icon name="bell" [size]="19" />
+        </button>
+      </div>
+    </header>
+
+    <!-- routed page -->
+    <main class="flex-1 overflow-y-auto p-6">
+      <router-outlet />
+    </main>
+  </div>
+</div>

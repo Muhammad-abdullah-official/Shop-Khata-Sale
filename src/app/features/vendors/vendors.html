@@ -1,0 +1,82 @@
+<app-page-header
+  title="Vendors"
+  subtitle="Companies jin se maal aata hai — lena dena ka hisaab"
+  actionLabel="Add Vendor"
+  (action)="openForm()"
+/>
+
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+  <app-stat-card label="Total Vendors" [value]="vendors().length.toString()" icon="truck" />
+  <app-stat-card label="Total Payable (dena hai)" [value]="totalPayable() | currency: 'PKR ' : 'symbol' : '1.0-0'" icon="credit-card" />
+</div>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-line text-left text-xs text-muted">
+          <th class="px-5 py-3 font-medium">Vendor</th>
+          <th class="px-5 py-3 font-medium">Contact</th>
+          <th class="px-5 py-3 font-medium">Purchased</th>
+          <th class="px-5 py-3 font-medium">Paid</th>
+          <th class="px-5 py-3 font-medium">Balance</th>
+          <th class="px-5 py-3 text-right font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (v of vendors(); track v.id) {
+          <tr class="border-b border-line last:border-0 hover:bg-canvas">
+            <td class="px-5 py-3">
+              <div class="font-medium text-ink">{{ v.name }}</div>
+              <div class="text-xs text-muted">{{ v.address }}</div>
+            </td>
+            <td class="px-5 py-3">
+              <div class="text-ink">{{ v.contactPerson }}</div>
+              <div class="text-xs text-muted">{{ v.phone }}</div>
+            </td>
+            <td class="px-5 py-3 text-muted">{{ v.totalPurchased | currency: 'PKR ' : 'symbol' : '1.0-0' }}</td>
+            <td class="px-5 py-3 text-muted">{{ v.totalPaid | currency: 'PKR ' : 'symbol' : '1.0-0' }}</td>
+            <td class="px-5 py-3 font-semibold" [class]="v.balance > 0 ? 'text-danger' : 'text-success'">
+              {{ v.balance | currency: 'PKR ' : 'symbol' : '1.0-0' }}
+            </td>
+            <td class="px-5 py-3">
+              <div class="flex items-center justify-end gap-1">
+                <button (click)="openEdit(v)" class="grid h-8 w-8 place-items-center rounded-lg text-muted transition hover:bg-canvas hover:text-ink" title="Edit" aria-label="Edit">
+                  <app-icon name="tag" [size]="16" />
+                </button>
+                <button (click)="remove(v)" class="grid h-8 w-8 place-items-center rounded-lg text-muted transition hover:bg-danger-light hover:text-danger" title="Delete" aria-label="Delete">
+                  <app-icon name="trash" [size]="16" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (showForm()) {
+  <app-modal [title]="modalTitle()" (close)="showForm.set(false)">
+    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+      <app-text-input label="Vendor / Company Name" [control]="form.controls.name" [required]="true" placeholder="e.g. Al-Karam Traders" />
+      <div class="grid grid-cols-2 gap-4">
+        <app-text-input label="Contact Person" [control]="form.controls.contactPerson" [required]="true" />
+        <app-text-input label="Phone" [control]="form.controls.phone" type="tel" [required]="true" placeholder="0300-1234567" />
+      </div>
+      <app-text-input label="Address" [control]="form.controls.address" placeholder="Market / area" />
+      @if (!editingId()) {
+        <div class="grid grid-cols-2 gap-4">
+          <app-text-input label="Opening — Total Purchased" [control]="form.controls.totalPurchased" type="number" />
+          <app-text-input label="Opening — Total Paid" [control]="form.controls.totalPaid" type="number" />
+        </div>
+      }
+      <button type="submit" class="hidden"></button>
+    </form>
+
+    <div footer>
+      <app-button variant="ghost" (click)="showForm.set(false)">Cancel</app-button>
+      <app-button variant="primary" (click)="submit()">{{ editingId() ? 'Save Changes' : 'Save Vendor' }}</app-button>
+    </div>
+  </app-modal>
+}

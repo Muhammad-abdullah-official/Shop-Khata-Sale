@@ -1,0 +1,42 @@
+@if (isOwner()) {
+  <app-page-header title="Activity Log" subtitle="Kis staff/owner ne kya kiya — poora record" />
+} @else {
+  <app-page-header title="My Activity" subtitle="Aap ne kaunse orders confirm/deliver kiye" />
+}
+
+<div class="card overflow-hidden">
+  @if (items().length) {
+    <ul class="divide-y divide-line">
+      @for (a of items(); track a.id) {
+        <li class="flex items-center gap-4 px-5 py-3.5">
+          <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-canvas text-ink">
+            <app-icon [name]="a.icon" [size]="17" />
+          </span>
+          <div class="min-w-0 flex-1">
+            <div class="text-sm text-ink">
+              <span class="font-semibold">{{ a.action }}</span>
+              <span class="text-muted"> — {{ a.detail }}</span>
+            </div>
+            @if (isOwner()) {
+              <div class="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
+                <span class="font-medium text-ink">{{ a.actorName }}</span>
+                <span
+                  class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase"
+                  [class]="a.actorRole === 'owner' ? 'bg-brand-light text-ink' : a.actorRole === 'staff' ? 'bg-blue-100 text-blue-700' : 'bg-canvas text-muted'"
+                >
+                  {{ a.actorRole }}
+                </span>
+              </div>
+            }
+          </div>
+          <span class="shrink-0 text-xs text-faint">{{ a.at }}</span>
+        </li>
+      }
+    </ul>
+  } @else {
+    <div class="grid place-items-center py-16 text-center text-faint">
+      <app-icon name="clock" [size]="40" />
+      <p class="mt-3 text-sm text-muted">Abhi koi activity nahi.</p>
+    </div>
+  }
+</div>

@@ -1,0 +1,84 @@
+<app-page-header
+  title="Inventory"
+  subtitle="Stock ka hisaab — kitna hai, kitna kam, kitna mangwana"
+  actionLabel="Stock In (Purchase)"
+  (action)="openForm()"
+/>
+
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+  <app-stat-card label="Total Products" [value]="totalProducts().toString()" icon="tag" />
+  <app-stat-card label="Stock Value (cost)" [value]="totalStockValue() | currency: 'PKR ' : 'symbol' : '1.0-0'" icon="box" />
+  <app-stat-card label="Low Stock Items" [value]="lowStock().length.toString()" icon="alert" hint="Reorder level se neeche" />
+</div>
+
+<div class="rounded-[--radius-card] border border-line bg-surface">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-line text-left text-xs text-muted">
+          <th class="px-5 py-3 font-medium">Product</th>
+          <th class="px-5 py-3 font-medium">Category</th>
+          <th class="px-5 py-3 font-medium">In Stock</th>
+          <th class="px-5 py-3 font-medium">Reorder Level</th>
+          <th class="px-5 py-3 font-medium">Status</th>
+          <th class="px-5 py-3 font-medium">Mangwana (suggested)</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of products(); track p.id) {
+          <tr class="border-b border-line last:border-0 hover:bg-canvas">
+            <td class="px-5 py-3 font-medium text-ink">{{ p.name }}</td>
+            <td class="px-5 py-3 text-muted">{{ p.category }}</td>
+            <td class="px-5 py-3 font-semibold text-ink">{{ p.stockQty }} {{ p.unit }}</td>
+            <td class="px-5 py-3 text-muted">{{ p.reorderLevel }} {{ p.unit }}</td>
+            <td class="px-5 py-3">
+              <app-status-badge
+                [status]="p.stockQty <= p.reorderLevel ? 'low' : 'ok'"
+                [label]="p.stockQty <= p.reorderLevel ? 'Low' : 'OK'"
+              />
+            </td>
+            <td class="px-5 py-3">
+              @if (suggestReorder(p) > 0) {
+                <span class="font-semibold text-red-600">+{{ suggestReorder(p) }} {{ p.unit }}</span>
+              } @else {
+                <span class="text-muted">—</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (showForm()) {
+  <app-modal title="Stock In — Purchase Entry" (close)="showForm.set(false)">
+    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+      <app-select-input
+        label="Product"
+        [control]="form.controls.productId"
+        [options]="productOptions()"
+        placeholder="Product chunein"
+        [required]="true"
+      />
+      <div class="grid grid-cols-2 gap-4">
+        <app-text-input label="Quantity (aaya)" [control]="form.controls.qty" type="number" [required]="true" />
+        <app-text-input label="Unit Cost (PKR)" [control]="form.controls.unitCost" type="number" [required]="true" />
+      </div>
+      <app-select-input
+        label="Vendor (optional)"
+        [control]="form.controls.vendorId"
+        [options]="vendorOptions()"
+      />
+      <p class="text-xs text-muted">
+        Stock is product me add ho jayega. Vendor chunne par uske khaate me purchase amount add hoga.
+      </p>
+      <button type="submit" class="hidden"></button>
+    </form>
+
+    <div footer>
+      <app-button variant="ghost" (click)="showForm.set(false)">Cancel</app-button>
+      <app-button variant="primary" (click)="submit()">Add Stock</app-button>
+    </div>
+  </app-modal>
+}

@@ -1,0 +1,135 @@
+<app-page-header
+  title="Products"
+  subtitle="Catalog — rate, qty rules, aur store pe publish"
+  actionLabel="Add Product"
+  (action)="openForm()"
+/>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-line text-left text-xs text-muted">
+          <th class="px-5 py-3 font-medium">Product</th>
+          <th class="px-5 py-3 font-medium">Category</th>
+          <th class="px-5 py-3 font-medium">Cost</th>
+          <th class="px-5 py-3 font-medium">Sale</th>
+          <th class="px-5 py-3 font-medium">Order (min–max)</th>
+          <th class="px-5 py-3 font-medium">On Store</th>
+          <th class="px-5 py-3 text-right font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of products(); track p.id) {
+          <tr class="border-b border-line last:border-0 hover:bg-canvas">
+            <td class="px-5 py-3">
+              <div class="flex items-center gap-3">
+                <span class="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-canvas text-faint">
+                  @if (p.imageUrl) {
+                    <img [src]="p.imageUrl" [alt]="p.name" class="h-full w-full object-cover" />
+                  } @else {
+                    <app-icon name="package" [size]="18" />
+                  }
+                </span>
+                <span class="font-medium text-ink">{{ p.name }}</span>
+              </div>
+            </td>
+            <td class="px-5 py-3 text-muted">{{ p.category }}</td>
+            <td class="px-5 py-3 text-muted">{{ p.costPrice | currency: 'PKR ' : 'symbol' : '1.0-0' }}</td>
+            <td class="px-5 py-3 font-medium text-ink">
+              {{ p.salePrice | currency: 'PKR ' : 'symbol' : '1.0-0' }}<span class="text-xs text-muted"> / {{ p.unit }}</span>
+            </td>
+            <td class="px-5 py-3 text-muted">{{ p.minOrder }}–{{ p.maxOrder }} {{ p.unit }} (step {{ p.step }})</td>
+            <td class="px-5 py-3">
+              @if (p.isPublished) {
+                <span class="text-xs font-semibold text-success">● Published</span>
+              } @else {
+                <span class="text-xs font-semibold text-muted">● Hidden</span>
+              }
+            </td>
+            <td class="px-5 py-3">
+              <div class="flex items-center justify-end gap-1">
+                <button (click)="openEdit(p)" class="grid h-8 w-8 place-items-center rounded-lg text-muted transition hover:bg-canvas hover:text-ink" title="Edit" aria-label="Edit">
+                  <app-icon name="tag" [size]="16" />
+                </button>
+                <button (click)="remove(p)" class="grid h-8 w-8 place-items-center rounded-lg text-muted transition hover:bg-danger-light hover:text-danger" title="Delete" aria-label="Delete">
+                  <app-icon name="trash" [size]="16" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (showForm()) {
+  <app-modal [title]="modalTitle()" (close)="showForm.set(false)">
+    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+      <app-text-input label="Product Name" [control]="form.controls.name" [required]="true" placeholder="e.g. Sugar (loose)" />
+
+      <!-- optional image -->
+      <div>
+        <span class="mb-1 block text-sm font-medium text-ink">Image <span class="font-normal text-muted">(optional)</span></span>
+        <div class="flex items-center gap-3">
+          <span class="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-lg border border-line bg-canvas text-faint">
+            @if (image()) {
+              <img [src]="image()" alt="preview" class="h-full w-full object-cover" />
+            } @else {
+              <app-icon name="package" [size]="24" />
+            }
+          </span>
+          <label class="cursor-pointer rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium text-ink transition hover:border-ink">
+            {{ image() ? 'Change' : 'Upload' }} image
+            <input type="file" accept="image/*" class="hidden" (change)="onImageSelected($event)" />
+          </label>
+          @if (image()) {
+            <button type="button" (click)="image.set(null)" class="text-sm text-danger hover:underline">Remove</button>
+          }
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <app-select-input label="Category" [control]="form.controls.category" [options]="categories" [required]="true" />
+        <app-select-input label="Unit" [control]="form.controls.unit" [options]="units" [required]="true" />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <app-text-input label="Cost Price (PKR)" [control]="form.controls.costPrice" type="number" [required]="true" />
+        <app-text-input label="Sale Price (PKR)" [control]="form.controls.salePrice" type="number" [required]="true" />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <app-text-input label="Stock Qty" [control]="form.controls.stockQty" type="number" [required]="true" />
+        <app-text-input label="Reorder Level" [control]="form.controls.reorderLevel" type="number" [required]="true" />
+      </div>
+
+      <!-- order rules -->
+      <div class="rounded-lg border border-line bg-canvas p-3">
+        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">Customer order rules</p>
+        <div class="grid grid-cols-3 gap-3">
+          <app-text-input label="Min order" [control]="form.controls.minOrder" type="number" [required]="true" />
+          <app-text-input label="Max order" [control]="form.controls.maxOrder" type="number" [required]="true" />
+          <app-text-input label="Step" [control]="form.controls.step" type="number" [required]="true" />
+        </div>
+        <p class="mt-2 text-xs text-muted">
+          <b class="text-ink">Step</b> = customer ki qty kitne-kitne me barhe. Unit badalne pe defaults khud set ho jate hain.
+        </p>
+        <div class="mt-2 rounded-md border border-line bg-surface px-3 py-2">
+          <span class="text-xs font-medium text-muted">Customer order kar sakega:</span>
+          <div class="mt-0.5 text-sm font-semibold text-ink">{{ qtyPreview() }}</div>
+        </div>
+      </div>
+
+      <label class="flex items-center gap-2 text-sm text-ink">
+        <input type="checkbox" [formControl]="form.controls.isPublished" class="h-4 w-4 rounded border-line" />
+        Store pe publish karein (customers ko dikhe)
+      </label>
+      <button type="submit" class="hidden"></button>
+    </form>
+
+    <div footer>
+      <app-button variant="ghost" (click)="showForm.set(false)">Cancel</app-button>
+      <app-button variant="primary" (click)="submit()">{{ editingId() ? 'Save Changes' : 'Save Product' }}</app-button>
+    </div>
+  </app-modal>
+}

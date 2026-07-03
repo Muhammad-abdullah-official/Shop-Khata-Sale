@@ -1,0 +1,73 @@
+<div class="flex min-h-screen">
+  <!-- ===== Left brand panel (hidden on small) ===== -->
+  <div class="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-brand p-12 text-white lg:flex">
+    <div class="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-white/10"></div>
+    <div class="absolute -bottom-24 -left-16 h-96 w-96 rounded-full bg-white/5"></div>
+
+    <div class="relative flex items-center gap-2">
+      <span class="grid h-10 w-10 place-items-center rounded-xl bg-white/15"><app-icon name="store" [size]="20" /></span>
+      <span class="text-lg font-bold">Shop Manager</span>
+    </div>
+
+    <div class="relative">
+      <h1 class="text-4xl font-extrabold leading-tight">
+        Apni dukaan,<br />ek jagah — smart aur simple.
+      </h1>
+      <p class="mt-4 max-w-md text-white/80">
+        Inventory, udhaar, orders, employees aur online store — sab kuch ek dashboard me.
+      </p>
+    </div>
+
+    <div class="relative flex gap-8 text-sm text-white/80">
+      <div><div class="text-2xl font-bold text-white">100%</div>Free hosting</div>
+      <div><div class="text-2xl font-bold text-white">Fast</div>&amp; reliable</div>
+      <div><div class="text-2xl font-bold text-white">24/7</div>Cloud ready</div>
+    </div>
+  </div>
+
+  <!-- ===== Right form ===== -->
+  <div class="flex w-full items-center justify-center p-6 lg:w-1/2">
+    <div class="w-full max-w-sm">
+      <div class="mb-8 flex items-center gap-2 lg:hidden">
+        <span class="grid h-10 w-10 place-items-center rounded-xl bg-brand text-white"><app-icon name="store" [size]="20" /></span>
+        <span class="text-lg font-bold text-ink">Shop Manager</span>
+      </div>
+
+      <h2 class="text-2xl font-bold text-ink">Login</h2>
+      <p class="mt-1 text-sm text-muted">Apne account me sign in karein.</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="mt-6 space-y-4">
+        <app-text-input label="Email" [control]="form.controls.email" type="email" [required]="true" placeholder="you@example.com" />
+        <app-text-input label="Password" [control]="form.controls.password" type="password" [required]="true" placeholder="••••••••" />
+
+        @if (error()) {
+          <div class="rounded-lg bg-danger-light px-3 py-2 text-sm font-medium text-red-700">
+            {{ error() }}
+          </div>
+        }
+
+        <app-button type="submit" variant="primary" [full]="true">Sign In</app-button>
+      </form>
+
+      <!-- demo helpers -->
+      <div class="mt-5 rounded-lg border border-dashed border-line bg-canvas p-3 text-xs text-muted">
+        <p class="mb-2 font-semibold text-ink">Demo accounts (try karein):</p>
+        <div class="flex flex-wrap gap-2">
+          <button (click)="fillDemo('owner')" class="rounded-md border border-line bg-surface px-2.5 py-1 font-medium text-ink transition hover:border-ink">
+            Shop Owner
+          </button>
+          <button (click)="fillDemo('staff')" class="rounded-md border border-line bg-surface px-2.5 py-1 font-medium text-ink transition hover:border-ink">
+            Staff
+          </button>
+          <button (click)="fillDemo('customer')" class="rounded-md border border-line bg-surface px-2.5 py-1 font-medium text-ink transition hover:border-ink">
+            Customer
+          </button>
+        </div>
+      </div>
+
+      <p class="mt-6 text-center text-sm text-muted">
+        Naya customer? <a routerLink="/register" class="font-semibold text-brand hover:underline">Account banayein</a>
+      </p>
+    </div>
+  </div>
+</div>

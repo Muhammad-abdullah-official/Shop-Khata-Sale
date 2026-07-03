@@ -1,0 +1,115 @@
+<app-page-header
+  title="Employees"
+  subtitle="Staff aur salary — kitni deni hai, kitni di"
+  actionLabel="Add Employee"
+  (action)="openForm()"
+/>
+
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+  <app-stat-card label="Active Staff" [value]="employees().length.toString()" icon="user" />
+  <app-stat-card label="Salary Baqi (is month)" [value]="salaryDue() | currency: 'PKR ' : 'symbol' : '1.0-0'" icon="banknote" />
+</div>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-line text-left text-xs text-muted">
+          <th class="px-5 py-3 font-medium">Employee</th>
+          <th class="px-5 py-3 font-medium">Phone</th>
+          <th class="px-5 py-3 font-medium">Salary</th>
+          <th class="px-5 py-3 font-medium">Paid</th>
+          <th class="px-5 py-3 font-medium">Baqi</th>
+          <th class="px-5 py-3 text-right font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (e of employees(); track e.id) {
+          <tr class="border-b border-line last:border-0 hover:bg-canvas">
+            <td class="px-5 py-3">
+              <div class="font-medium text-ink">{{ e.name }}</div>
+              <div class="text-xs text-muted">Joined {{ e.joinDate }}</div>
+            </td>
+            <td class="px-5 py-3 text-muted">{{ e.phone }}</td>
+            <td class="px-5 py-3 text-ink">{{ e.monthlySalary | currency: 'PKR ' : 'symbol' : '1.0-0' }}</td>
+            <td class="px-5 py-3 text-muted">{{ e.paidThisMonth | currency: 'PKR ' : 'symbol' : '1.0-0' }}</td>
+            <td class="px-5 py-3 font-semibold" [class]="remaining(e) > 0 ? 'text-danger' : 'text-success'">
+              {{ remaining(e) | currency: 'PKR ' : 'symbol' : '1.0-0' }}
+            </td>
+            <td class="px-5 py-3">
+              <div class="flex items-center justify-end gap-1">
+                @if (remaining(e) > 0) {
+                  <button (click)="openPayForm(e)" class="rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark">Pay Salary</button>
+                } @else {
+                  <span class="mr-1 text-xs font-semibold text-success">Cleared</span>
+                }
+                <button (click)="openEdit(e)" class="grid h-8 w-8 place-items-center rounded-lg text-muted transition hover:bg-canvas hover:text-ink" title="Edit" aria-label="Edit">
+                  <app-icon name="tag" [size]="16" />
+                </button>
+                <button (click)="remove(e)" class="grid h-8 w-8 place-items-center rounded-lg text-muted transition hover:bg-danger-light hover:text-danger" title="Delete" aria-label="Delete">
+                  <app-icon name="trash" [size]="16" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add / Edit Employee -->
+@if (showForm()) {
+  <app-modal [title]="modalTitle()" (close)="showForm.set(false)">
+    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+      <app-text-input label="Name" [control]="form.controls.name" [required]="true" />
+      <app-text-input label="Phone" [control]="form.controls.phone" type="tel" [required]="true" placeholder="0300-1234567" />
+      <div class="grid grid-cols-2 gap-4">
+        <app-text-input label="Monthly Salary (PKR)" [control]="form.controls.monthlySalary" type="number" [required]="true" />
+        <app-text-input label="Join Date" [control]="form.controls.joinDate" />
+      </div>
+
+      @if (!editingId()) {
+        <div class="rounded-lg border border-line bg-canvas p-3">
+          <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">Login (optional)</p>
+          <p class="mb-3 text-xs text-muted">Email + password dein to ye employee khud login karke orders dekh/deliver kar sakega.</p>
+          <div class="grid grid-cols-2 gap-3">
+            <app-text-input label="Email" [control]="form.controls.email" type="email" placeholder="staff@shop.pk" />
+            <app-text-input label="Password" [control]="form.controls.password" type="password" placeholder="••••••" />
+          </div>
+        </div>
+      }
+      <button type="submit" class="hidden"></button>
+    </form>
+
+    <div footer>
+      <app-button variant="ghost" (click)="showForm.set(false)">Cancel</app-button>
+      <app-button variant="primary" (click)="submit()">{{ editingId() ? 'Save Changes' : 'Save Employee' }}</app-button>
+    </div>
+  </app-modal>
+}
+
+<!-- Pay Salary -->
+@if (payingFor(); as emp) {
+  <app-modal [title]="'Pay Salary — ' + emp.name" (close)="payingFor.set(null)">
+    <form [formGroup]="payForm" (ngSubmit)="submitPay()" class="space-y-4">
+      <div class="rounded-lg bg-canvas p-3 text-sm">
+        <div class="flex justify-between">
+          <span class="text-muted">Monthly Salary</span>
+          <span class="font-semibold text-ink">{{ emp.monthlySalary | currency: 'PKR ' : 'symbol' : '1.0-0' }}</span>
+        </div>
+        <div class="mt-1 flex justify-between">
+          <span class="text-muted">Baqi</span>
+          <span class="font-semibold text-danger">{{ remaining(emp) | currency: 'PKR ' : 'symbol' : '1.0-0' }}</span>
+        </div>
+      </div>
+      <app-text-input label="Payment Amount (PKR)" [control]="payForm.controls.amount" type="number" [required]="true" />
+      <button type="submit" class="hidden"></button>
+    </form>
+
+    <div footer>
+      <app-button variant="ghost" (click)="payingFor.set(null)">Cancel</app-button>
+      <app-button variant="success" (click)="submitPay()">Confirm Payment</app-button>
+    </div>
+  </app-modal>
+}

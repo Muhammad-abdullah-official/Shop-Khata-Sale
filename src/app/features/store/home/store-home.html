@@ -1,0 +1,89 @@
+<!-- hero -->
+<div class="mb-6 overflow-hidden rounded-2xl bg-brand p-7 text-white">
+  <div class="relative z-10 max-w-lg">
+    <h1 class="text-2xl font-bold sm:text-3xl">Aaj kya chahiye?</h1>
+    <p class="mt-2 text-white/70">Grocery, dairy aur zaroorat ka saman — order karein, ghar pe mangwayein.</p>
+  </div>
+</div>
+
+<!-- controls -->
+<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex flex-wrap gap-2">
+    @for (c of categories(); track c) {
+      <button
+        (click)="activeCategory.set(c)"
+        class="rounded-full border px-3.5 py-1.5 text-sm font-medium transition"
+        [class]="
+          activeCategory() === c
+            ? 'border-brand bg-brand text-white'
+            : 'border-line bg-surface text-muted hover:text-ink'
+        "
+      >
+        {{ c }}
+      </button>
+    }
+  </div>
+  <div class="relative sm:w-64">
+    <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-faint">
+      <app-icon name="search" [size]="17" />
+    </span>
+    <input
+      [ngModel]="search()"
+      (ngModelChange)="search.set($event)"
+      placeholder="Search products..."
+      class="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-sm outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/10"
+    />
+  </div>
+</div>
+
+<!-- grid (denser) -->
+@if (filtered().length) {
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    @for (p of filtered(); track p.id) {
+      <div class="card card-hover flex flex-col overflow-hidden">
+        <!-- image (optional, compact) -->
+        <div class="grid h-24 place-items-center border-b border-line bg-canvas text-faint">
+          @if (p.imageUrl) {
+            <img [src]="p.imageUrl" [alt]="p.name" class="h-full w-full object-cover" />
+          } @else {
+            <app-icon name="package" [size]="30" />
+          }
+        </div>
+
+        <div class="flex flex-1 flex-col p-3">
+          <span class="text-[11px] font-medium text-faint">{{ p.category }}</span>
+          <h3 class="mt-0.5 line-clamp-2 text-sm font-semibold text-ink">{{ p.name }}</h3>
+          <div class="mt-1.5 flex items-baseline gap-1">
+            <span class="font-bold text-ink">{{ p.salePrice | currency: 'PKR ' : 'symbol' : '1.0-0' }}</span>
+            <span class="text-[11px] text-muted">/ {{ p.unit }}</span>
+          </div>
+
+          <div class="mt-auto pt-2.5">
+            @if (p.stockQty > 0) {
+              <!-- qty stepper -->
+              <div class="mb-2 flex items-center justify-between rounded-lg border border-line">
+                <button (click)="dec(p)" class="grid h-8 w-8 place-items-center text-muted transition hover:text-ink disabled:opacity-30" [disabled]="qtyOf(p) <= p.minOrder" aria-label="Less">
+                  <app-icon name="minus" [size]="14" />
+                </button>
+                <span class="text-sm font-semibold text-ink">{{ qtyOf(p) }} {{ p.unit }}</span>
+                <button (click)="inc(p)" class="grid h-8 w-8 place-items-center text-muted transition hover:text-ink disabled:opacity-30" [disabled]="qtyOf(p) >= p.maxOrder" aria-label="More">
+                  <app-icon name="plus" [size]="14" />
+                </button>
+              </div>
+              <button (click)="addToCart(p)" class="w-full rounded-lg bg-brand py-2 text-sm font-semibold text-white transition hover:bg-brand-dark">
+                Add to Cart
+              </button>
+            } @else {
+              <span class="block rounded-lg bg-canvas py-2 text-center text-xs font-medium text-danger">Out of stock</span>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+} @else {
+  <div class="card grid place-items-center py-20 text-center text-faint">
+    <app-icon name="search" [size]="40" />
+    <p class="mt-3 text-sm text-muted">Koi product nahi mila.</p>
+  </div>
+}

@@ -1,0 +1,54 @@
+<div class="flex min-h-screen">
+  <!-- ===== Left brand panel ===== -->
+  <div class="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-brand p-12 text-white lg:flex">
+    <div class="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-white/10"></div>
+    <div class="absolute -bottom-24 -left-16 h-96 w-96 rounded-full bg-white/5"></div>
+
+    <div class="relative flex items-center gap-2">
+      <span class="grid h-10 w-10 place-items-center rounded-xl bg-white/15"><app-icon name="store" [size]="20" /></span>
+      <span class="text-lg font-bold">Shop Manager</span>
+    </div>
+
+    <div class="relative">
+      <h1 class="text-4xl font-extrabold leading-tight">Ghar baithe<br />order karein.</h1>
+      <p class="mt-4 max-w-md text-white/80">
+        Account banayein, products browse karein, aur online order place karein — cash, COD ya udhaar.
+      </p>
+    </div>
+
+    <div class="relative text-sm text-white/70">© Shop Manager 2026</div>
+  </div>
+
+  <!-- ===== Right form ===== -->
+  <div class="flex w-full items-center justify-center p-6 lg:w-1/2">
+    <div class="w-full max-w-sm">
+      <div class="mb-8 flex items-center gap-2 lg:hidden">
+        <span class="grid h-10 w-10 place-items-center rounded-xl bg-brand text-white"><app-icon name="store" [size]="20" /></span>
+        <span class="text-lg font-bold text-ink">Shop Manager</span>
+      </div>
+
+      <h2 class="text-2xl font-bold text-ink">Create account</h2>
+      <p class="mt-1 text-sm text-muted">Customer ke tor par register karein.</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="mt-6 space-y-4">
+        <app-text-input label="Full Name" [control]="form.controls.name" [required]="true" placeholder="Ahmed Raza" />
+        <app-text-input label="Email" [control]="form.controls.email" type="email" [required]="true" placeholder="you@example.com" />
+        <div class="grid grid-cols-2 gap-3">
+          <app-text-input label="Phone" [control]="form.controls.phone" type="tel" [required]="true" placeholder="0300-1234567" />
+          <app-text-input label="Password" [control]="form.controls.password" type="password" [required]="true" placeholder="••••••" />
+        </div>
+        <app-text-input label="Delivery Address" [control]="form.controls.address" [required]="true" placeholder="Block, area, city" />
+
+        @if (error()) {
+          <div class="rounded-lg bg-danger-light px-3 py-2 text-sm font-medium text-red-700">{{ error() }}</div>
+        }
+
+        <app-button type="submit" variant="primary" [full]="true">Create Account</app-button>
+      </form>
+
+      <p class="mt-6 text-center text-sm text-muted">
+        Pehle se account hai? <a routerLink="/login" class="font-semibold text-brand hover:underline">Login</a>
+      </p>
+    </div>
+  </div>
+</div>
