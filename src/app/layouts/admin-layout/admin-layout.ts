@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { Icon, IconName } from '../../shared/ui/icon/icon';
 
 interface NavItem {
@@ -20,9 +21,22 @@ export class AdminLayout {
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  readonly notify = inject(NotificationService);
 
   readonly sidebarOpen = signal(true); // desktop rail collapse
   readonly mobileOpen = signal(false); // mobile off-canvas drawer
+  readonly notifOpen = signal(false); // bell dropdown
+
+  toggleNotif() {
+    const opening = !this.notifOpen();
+    this.notifOpen.set(opening);
+    if (opening) this.notify.markAllRead();
+  }
+
+  openNotif(link?: string) {
+    this.notifOpen.set(false);
+    if (link) this.router.navigateByUrl(link);
+  }
 
   logout() {
     this.auth.logout();
