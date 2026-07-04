@@ -17,8 +17,9 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
         [type]="type()"
         [formControl]="control()"
         [placeholder]="placeholder()"
-        class="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-brand focus:ring-2 focus:ring-brand/20"
-        [class.border-red-400]="invalid()"
+        class="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none transition-all duration-150 placeholder:text-faint hover:border-stone-300 focus:border-ink focus:ring-4 focus:ring-ink/[0.06]"
+        [class.border-danger]="invalid()"
+        [class.focus:ring-danger/10]="invalid()"
       />
       @if (invalid()) {
         <span class="mt-1 block text-xs text-red-600">{{ label() }} theek se bharein</span>

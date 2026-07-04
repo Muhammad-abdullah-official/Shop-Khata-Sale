@@ -1,13 +1,13 @@
 import { Component, input } from '@angular/core';
 
-/** App button with a few variants. Use type="submit" inside forms. */
+/** App button — consistent sizing + hover/active/focus/disabled states. */
 @Component({
   selector: 'app-button',
   template: `
     <button
       [type]="type()"
       [disabled]="disabled()"
-      class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+      class="inline-flex select-none items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45"
       [class.w-full]="full()"
       [class]="variantClass()"
     >
@@ -25,13 +25,13 @@ export class Button {
   variantClass() {
     switch (this.variant()) {
       case 'ghost':
-        return 'border border-line bg-surface text-muted hover:text-ink hover:border-slate-300';
+        return 'border border-line bg-surface text-ink hover:bg-canvas hover:border-stone-300';
       case 'success':
-        return 'bg-success text-white hover:brightness-95 shadow-sm';
+        return 'bg-success text-white shadow-sm hover:brightness-110';
       case 'danger':
-        return 'bg-danger text-white hover:brightness-95 shadow-sm';
+        return 'bg-danger text-white shadow-sm hover:brightness-110';
       default:
-        return 'bg-brand text-white hover:bg-brand-dark shadow-sm';
+        return 'bg-brand text-white shadow-sm hover:bg-brand-dark';
     }
   }
 }

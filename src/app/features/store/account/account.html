@@ -1,7 +1,7 @@
 <h1 class="mb-5 text-xl font-bold text-ink">My Account</h1>
 
 <!-- KPI row -->
-<div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
   <app-stat-card label="Total Shopping" [value]="totalSpent() | currency: 'PKR ' : 'symbol' : '1.0-0'" icon="cart" hint="Lifetime" />
   <app-stat-card label="Is Month" [value]="monthSpent() | currency: 'PKR ' : 'symbol' : '1.0-0'" icon="calendar" hint="Is month ki shopping" />
   <app-stat-card label="Total Orders" [value]="orderCount().toString()" icon="package" [hint]="deliveredCount() + ' delivered'" />

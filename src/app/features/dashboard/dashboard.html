@@ -1,7 +1,7 @@
 <app-page-header title="Dashboard" subtitle="Aaj ki shop ki poori summary" />
 
 <!-- Row 1: money -->
-<div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
   <app-stat-card label="Aaj ki Sales" [value]="todaySales() | currency: 'PKR ' : 'symbol' : '1.0-0'" icon="wallet" hint="Paid orders today" />
   <app-stat-card label="Is Month Sales" [value]="monthSales() | currency: 'PKR ' : 'symbol' : '1.0-0'" icon="calendar" hint="Is month total" />
   <app-stat-card label="Est. Profit" [value]="estimatedProfit() | currency: 'PKR ' : 'symbol' : '1.0-0'" icon="trending-up" hint="Paid orders pe munafa" />
@@ -9,7 +9,7 @@
 </div>
 
 <!-- Row 2: receivables / payables / people -->
-<div class="mt-4 grid grid-cols-2 gap-4 xl:grid-cols-4">
+<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
   <app-stat-card label="Udhaar (lena hai)" [value]="totalUdhaar() | currency: 'PKR ' : 'symbol' : '1.0-0'" icon="notebook" hint="Customers se" />
   <app-stat-card label="Vendors ko dena" [value]="totalPayable() | currency: 'PKR ' : 'symbol' : '1.0-0'" icon="truck" hint="Companies payable" />
   <app-stat-card label="Salary Baqi" [value]="salaryDue() | currency: 'PKR ' : 'symbol' : '1.0-0'" icon="user" hint="Is month" />
@@ -17,7 +17,7 @@
 </div>
 
 <!-- Row 3: quick counters -->
-<div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
   <div class="card flex items-center gap-3 p-4">
     <span class="grid h-10 w-10 place-items-center rounded-lg bg-canvas text-ink"><app-icon name="clock" /></span>
     <div><div class="text-xl font-bold text-ink">{{ pendingOrders().length }}</div><div class="text-xs text-muted">Pending Orders</div></div>
@@ -58,7 +58,9 @@
           @for (o of recentOrders(); track o.id) {
             <tr class="border-b border-line last:border-0 hover:bg-canvas">
               <td class="px-5 py-3 font-medium text-ink">{{ o.id }}</td>
-              <td class="px-5 py-3 text-muted">{{ o.customerName }}</td>
+              <td class="px-5 py-3 text-muted">
+                <span class="block max-w-[140px] truncate" [title]="o.customerName">{{ o.customerName }}</span>
+              </td>
               <td class="px-5 py-3 font-medium text-ink">{{ o.total | currency: 'PKR ' : 'symbol' : '1.0-0' }}</td>
               <td class="px-5 py-3"><app-status-badge [status]="o.paymentStatus" /></td>
               <td class="px-5 py-3"><app-status-badge [status]="o.orderStatus" /></td>
@@ -77,9 +79,9 @@
       </div>
       <ul class="mt-3 space-y-2">
         @for (p of lowStock(); track p.id) {
-          <li class="flex items-center justify-between text-sm">
-            <span class="text-ink">{{ p.name }}</span>
-            <span class="font-semibold text-red-600">{{ p.stockQty }} {{ p.unit }} left</span>
+          <li class="flex items-center justify-between gap-2 text-sm">
+            <span class="min-w-0 truncate text-ink" [title]="p.name">{{ p.name }}</span>
+            <span class="shrink-0 font-semibold text-danger">{{ p.stockQty }} {{ p.unit }} left</span>
           </li>
         } @empty {
           <li class="flex items-center gap-1.5 text-sm text-success"><app-icon name="check-circle" [size]="15" /> Sab stock theek hai</li>
