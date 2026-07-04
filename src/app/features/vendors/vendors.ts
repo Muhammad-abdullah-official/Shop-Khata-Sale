@@ -28,6 +28,7 @@ export class Vendors {
 
   readonly showForm = signal(false);
   readonly editingId = signal<string | null>(null);
+  readonly payingFor = signal<Vendor | null>(null);
   readonly modalTitle = computed(() => (this.editingId() ? 'Edit Vendor' : 'Add Vendor'));
 
   readonly form = this.fb.nonNullable.group({
@@ -38,6 +39,26 @@ export class Vendors {
     totalPurchased: [0, [Validators.required, Validators.min(0)]],
     totalPaid: [0, [Validators.required, Validators.min(0)]],
   });
+
+  readonly payForm = this.fb.nonNullable.group({
+    amount: [0, [Validators.required, Validators.min(1)]],
+  });
+
+  openPay(v: Vendor): void {
+    this.payForm.reset({ amount: v.balance });
+    this.payingFor.set(v);
+  }
+
+  submitPay(): void {
+    const v = this.payingFor();
+    if (!v || this.payForm.invalid) {
+      this.payForm.markAllAsTouched();
+      return;
+    }
+    this.vendorSvc.payVendor(v.id, this.payForm.getRawValue().amount);
+    this.toast.success(`${v.name} ko payment ho gayi`);
+    this.payingFor.set(null);
+  }
 
   openForm(): void {
     this.editingId.set(null);

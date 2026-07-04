@@ -79,9 +79,12 @@
         <div class="divide-y divide-line">
           @for (o of orders(); track o.id) {
             <div class="flex items-center gap-4 px-5 py-4">
+              <button (click)="viewingId.set(o.id)" class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-canvas text-faint transition hover:text-ink" title="View items" aria-label="View">
+                <app-icon name="package" [size]="18" />
+              </button>
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="font-semibold text-ink">{{ o.id }}</span>
+                  <button (click)="viewingId.set(o.id)" class="font-semibold text-ink hover:underline">{{ o.id }}</button>
                   <app-status-badge [status]="o.orderStatus" />
                   @if (o.cancelRequested) {
                     <span class="rounded-full bg-warning-light px-2 py-0.5 text-[11px] font-semibold text-warning">Cancel requested</span>
@@ -109,3 +112,55 @@
     </div>
   </div>
 </div>
+
+@if (viewingOrder(); as o) {
+  <app-modal [title]="o.id" (close)="viewingId.set(null)">
+    <div class="space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="text-sm text-muted">{{ o.date }}</div>
+        <div class="flex items-center gap-1.5">
+          <app-status-badge [status]="o.orderStatus" />
+          <app-status-badge [status]="o.paymentStatus" />
+        </div>
+      </div>
+
+      <div class="overflow-hidden rounded-lg border border-line">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-line bg-canvas text-left text-xs text-muted">
+              <th class="px-3 py-2 font-medium">Item</th>
+              <th class="px-3 py-2 text-center font-medium">Qty</th>
+              <th class="px-3 py-2 text-right font-medium">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (it of o.items; track it.productId) {
+              <tr class="border-b border-line last:border-0">
+                <td class="px-3 py-2 font-medium text-ink">{{ it.productName }}</td>
+                <td class="px-3 py-2 text-center text-ink">{{ it.qty }}</td>
+                <td class="px-3 py-2 text-right text-ink">{{ it.subtotal | currency: 'PKR ' : 'symbol' : '1.0-0' }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="bg-canvas">
+              <td colspan="2" class="px-3 py-2 text-right text-sm font-semibold text-ink">Total</td>
+              <td class="px-3 py-2 text-right text-sm font-bold text-ink">{{ o.total | currency: 'PKR ' : 'symbol' : '1.0-0' }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="rounded-lg border border-line p-3 text-sm">
+        <div class="flex justify-between"><span class="text-muted">Delivery</span><span class="text-right text-ink">{{ o.deliveryAddress }}</span></div>
+      </div>
+    </div>
+
+    <div footer>
+      @if (canCancel(o)) {
+        <button (click)="cancel(o)" class="rounded-lg border border-line px-4 py-2 text-sm font-semibold text-danger hover:bg-danger-light">Cancel order</button>
+      }
+      <button (click)="viewingId.set(null)" class="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">Close</button>
+    </div>
+  </app-modal>
+}

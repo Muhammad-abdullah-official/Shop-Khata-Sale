@@ -49,4 +49,17 @@ export class VendorService {
     );
     this.activity.log('Stock purchase', `PKR ${amount.toLocaleString()} — ${name}`, 'truck');
   }
+
+  /** Record a payment made to a vendor (reduces payable). */
+  payVendor(vendorId: string, amount: number): void {
+    const name = this._vendors().find((v) => v.id === vendorId)?.name ?? 'vendor';
+    this._vendors.update((list) =>
+      list.map((v) =>
+        v.id === vendorId
+          ? { ...v, totalPaid: v.totalPaid + amount, balance: Math.max(0, v.balance - amount) }
+          : v,
+      ),
+    );
+    this.activity.log('Paid vendor', `PKR ${amount.toLocaleString()} — ${name}`, 'wallet');
+  }
 }

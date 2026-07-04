@@ -160,7 +160,7 @@
     <div footer>
       @if (o.cancelRequested) {
         <button (click)="rejectCancel(o.id)" class="rounded-lg border border-line px-4 py-2 text-sm font-semibold text-muted hover:text-ink">Reject cancel</button>
-        <button (click)="approveCancel(o.id); viewingId.set(null)" class="rounded-lg bg-danger px-4 py-2 text-sm font-semibold text-white hover:brightness-95">Approve cancel</button>
+        <button (click)="approveCancel(o.id)" class="rounded-lg bg-danger px-4 py-2 text-sm font-semibold text-white hover:brightness-95">Approve cancel</button>
       } @else if (o.orderStatus === 'pending') {
         <button (click)="viewingId.set(null)" class="rounded-lg border border-line px-4 py-2 text-sm font-semibold text-muted hover:text-ink">Close</button>
         <button (click)="confirm(o.id)" class="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">Confirm Order</button>

@@ -1,9 +1,10 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { StatusBadge } from '../../../shared/components/status-badge/status-badge';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 import { Icon } from '../../../shared/ui/icon/icon';
+import { Modal } from '../../../shared/ui/modal/modal';
 import { AuthService } from '../../../core/services/auth.service';
 import { OrderService } from '../../../core/services/order.service';
 import { CustomerService } from '../../../core/services/customer.service';
@@ -14,7 +15,7 @@ import { Order } from '../../../core/models';
 
 @Component({
   selector: 'app-account',
-  imports: [CurrencyPipe, RouterLink, StatusBadge, StatCard, Icon],
+  imports: [CurrencyPipe, RouterLink, StatusBadge, StatCard, Icon, Modal],
   templateUrl: './account.html',
 })
 export class Account {
@@ -28,6 +29,9 @@ export class Account {
   private readonly uid = computed(() => this.auth.currentUser()?.id ?? '');
 
   readonly orders = computed(() => this.orderSvc.ordersForCustomer(this.uid()));
+
+  readonly viewingId = signal<string | null>(null);
+  readonly viewingOrder = computed(() => this.orders().find((o) => o.id === this.viewingId()) ?? null);
 
   // ---- shopping KPIs ----
   readonly totalSpent = computed(() => this.orders().reduce((s, o) => s + o.total, 0));
