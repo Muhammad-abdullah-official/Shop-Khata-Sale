@@ -1,8 +1,8 @@
 <!-- hero -->
-<div class="mb-6 overflow-hidden rounded-2xl bg-brand p-7 text-white">
+<div class="mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-[#292524] to-[#1c1917] p-8 text-white">
   <div class="relative z-10 max-w-lg">
-    <h1 class="text-2xl font-bold sm:text-3xl">Aaj kya chahiye?</h1>
-    <p class="mt-2 text-white/70">Grocery, dairy aur zaroorat ka saman — order karein, ghar pe mangwayein.</p>
+    <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Aaj kya chahiye?</h1>
+    <p class="mt-2 text-white/60">Grocery, dairy aur zaroorat ka saman — order karein, ghar pe mangwayein.</p>
   </div>
 </div>
 
@@ -38,21 +38,21 @@
 
 <!-- grid (denser) -->
 @if (filtered().length) {
-  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
     @for (p of filtered(); track p.id) {
       <div class="card card-hover flex flex-col overflow-hidden">
-        <!-- image (optional, compact) -->
-        <div class="grid h-24 place-items-center border-b border-line bg-canvas text-faint">
+        <!-- image (optional) — taller on mobile, compact on desktop -->
+        <div class="grid h-44 place-items-center border-b border-line bg-canvas text-faint sm:h-28 lg:h-24">
           @if (p.imageUrl) {
             <img [src]="p.imageUrl" [alt]="p.name" class="h-full w-full object-cover" />
           } @else {
-            <app-icon name="package" [size]="30" />
+            <app-icon name="package" [size]="34" />
           }
         </div>
 
-        <div class="flex flex-1 flex-col p-3">
+        <div class="flex flex-1 flex-col p-3.5 sm:p-3">
           <span class="text-[11px] font-medium text-faint">{{ p.category }}</span>
-          <h3 class="mt-0.5 line-clamp-2 text-sm font-semibold text-ink">{{ p.name }}</h3>
+          <h3 class="mt-0.5 line-clamp-2 min-h-[2.5em] text-sm font-semibold text-ink" [title]="p.name">{{ p.name }}</h3>
           <div class="mt-1.5 flex items-baseline gap-1">
             <span class="font-bold text-ink">{{ p.salePrice | currency: 'PKR ' : 'symbol' : '1.0-0' }}</span>
             <span class="text-[11px] text-muted">/ {{ p.unit }}</span>

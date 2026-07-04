@@ -9,8 +9,8 @@ import { Button } from '../button/button';
   template: `
     @if (confirm.state(); as s) {
       <div class="animate-fade fixed inset-0 z-[90] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-ink/40" (click)="confirm.cancel()"></div>
-        <div class="relative w-full max-w-sm rounded-xl bg-surface p-5 shadow-[var(--shadow-pop)]">
+        <div class="absolute inset-0 bg-ink/40 backdrop-blur-[2px]" (click)="confirm.cancel()"></div>
+        <div class="animate-modal relative w-full max-w-sm rounded-2xl bg-surface p-6 shadow-[var(--shadow-pop)]">
           <h3 class="text-base font-semibold text-ink">{{ s.title }}</h3>
           <p class="mt-1.5 text-sm text-muted">{{ s.message }}</p>
           <div class="mt-5 flex justify-end gap-2">

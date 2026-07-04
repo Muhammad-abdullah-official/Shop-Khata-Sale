@@ -58,6 +58,14 @@
               </div>
             </td>
           </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="px-5 py-14 text-center">
+              <div class="mx-auto grid h-11 w-11 place-items-center rounded-lg bg-canvas text-faint"><app-icon name="package" [size]="22" /></div>
+              <p class="mt-3 text-sm text-muted">Abhi koi product nahi. Pehla product add karein.</p>
+              <button (click)="openForm()" class="mt-3 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">+ Add Product</button>
+            </td>
+          </tr>
         }
       </tbody>
     </table>

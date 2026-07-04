@@ -20,8 +20,8 @@ export interface SelectOption {
       </span>
       <select
         [formControl]="control()"
-        class="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
-        [class.border-red-400]="invalid()"
+        class="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none transition-all duration-150 hover:border-stone-300 focus:border-ink focus:ring-4 focus:ring-ink/[0.06]"
+        [class.border-danger]="invalid()"
       >
         @if (placeholder()) {
           <option value="" disabled>{{ placeholder() }}</option>

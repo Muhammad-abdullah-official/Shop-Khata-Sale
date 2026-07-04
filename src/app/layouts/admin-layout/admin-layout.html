@@ -1,11 +1,16 @@
 <div class="flex h-screen overflow-hidden">
+  <!-- mobile backdrop -->
+  @if (mobileOpen()) {
+    <div class="animate-fade fixed inset-0 z-40 bg-ink/40 lg:hidden" (click)="closeMobile()"></div>
+  }
+
   <!-- ============ Sidebar ============ -->
   <aside
-    class="flex flex-col border-r border-line bg-surface transition-all duration-200"
-    [class.w-64]="sidebarOpen()"
-    [class.w-[72px]]="!sidebarOpen()"
+    class="sidebar-anim fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-line bg-surface lg:static lg:z-auto lg:translate-x-0"
+    [class.-translate-x-full]="!mobileOpen()"
+    [class]="sidebarOpen() ? '' : 'lg:w-20'"
   >
-    <!-- brand + collapse toggle -->
+    <!-- brand + toggle -->
     <div class="flex h-16 items-center gap-2.5 border-b border-line px-4">
       <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand text-white">
         <app-icon name="store" [size]="18" />
@@ -15,13 +20,22 @@
           <div class="text-sm font-semibold text-ink">Shop Manager</div>
           <div class="text-xs text-muted">{{ roleLabel() }}</div>
         </div>
+        <!-- desktop: collapse rail -->
         <button
           (click)="toggleSidebar()"
-          class="grid h-8 w-8 place-items-center rounded-lg text-faint transition hover:bg-canvas hover:text-ink"
+          class="hidden h-8 w-8 place-items-center rounded-lg text-faint transition-colors hover:bg-canvas hover:text-ink lg:grid"
           aria-label="Collapse sidebar"
           title="Collapse"
         >
           <app-icon name="collapse" [size]="18" />
+        </button>
+        <!-- mobile: close drawer -->
+        <button
+          (click)="closeMobile()"
+          class="grid h-8 w-8 place-items-center rounded-lg text-faint transition-colors hover:bg-canvas hover:text-ink lg:hidden"
+          aria-label="Close menu"
+        >
+          <app-icon name="x" [size]="18" />
         </button>
       }
     </div>
@@ -31,9 +45,10 @@
       @for (item of nav(); track item.path) {
         <a
           [routerLink]="item.path"
+          (click)="closeMobile()"
           routerLinkActive="bg-brand! text-white! font-medium"
           [title]="item.label"
-          class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted transition hover:bg-canvas hover:text-ink"
+          class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted transition-colors duration-150 hover:bg-canvas hover:text-ink"
           [class.justify-center]="!sidebarOpen()"
         >
           <app-icon [name]="item.icon" [size]="18" />
@@ -57,7 +72,7 @@
           </div>
           <button
             (click)="logout()"
-            class="grid h-8 w-8 place-items-center rounded-lg text-faint transition hover:bg-canvas hover:text-danger"
+            class="grid h-8 w-8 place-items-center rounded-lg text-faint transition-colors hover:bg-canvas hover:text-danger"
             title="Logout"
             aria-label="Logout"
           >
@@ -71,28 +86,39 @@
   <!-- ============ Main ============ -->
   <div class="flex flex-1 flex-col overflow-hidden">
     <!-- topbar -->
-    <header class="flex h-16 items-center justify-between border-b border-line bg-surface px-5">
-      <button
-        (click)="toggleSidebar()"
-        class="grid h-9 w-9 place-items-center rounded-lg text-muted transition hover:bg-canvas hover:text-ink"
-        aria-label="Toggle sidebar"
-        title="Menu"
-      >
-        <app-icon name="menu" />
-      </button>
+    <header class="flex h-16 shrink-0 items-center justify-between border-b border-line bg-surface/90 px-4 backdrop-blur sm:px-5">
+      <div class="flex items-center gap-2">
+        <!-- mobile: open drawer -->
+        <button
+          (click)="toggleMobile()"
+          class="grid h-9 w-9 place-items-center rounded-lg text-muted transition-colors hover:bg-canvas hover:text-ink lg:hidden"
+          aria-label="Open menu"
+        >
+          <app-icon name="menu" />
+        </button>
+        <!-- desktop: collapse rail -->
+        <button
+          (click)="toggleSidebar()"
+          class="hidden h-9 w-9 place-items-center rounded-lg text-muted transition-colors hover:bg-canvas hover:text-ink lg:grid"
+          aria-label="Toggle sidebar"
+          title="Menu"
+        >
+          <app-icon name="menu" />
+        </button>
+      </div>
       <div class="flex items-center gap-4">
         <div class="hidden text-right sm:block">
           <div class="text-sm font-medium text-ink">Today</div>
-          <div class="text-xs text-muted">3 July 2026</div>
+          <div class="text-xs text-muted">4 July 2026</div>
         </div>
-        <button class="grid h-9 w-9 place-items-center rounded-lg text-muted transition hover:bg-canvas hover:text-ink" aria-label="Notifications">
+        <button class="grid h-9 w-9 place-items-center rounded-lg text-muted transition-colors hover:bg-canvas hover:text-ink" aria-label="Notifications">
           <app-icon name="bell" [size]="19" />
         </button>
       </div>
     </header>
 
     <!-- routed page -->
-    <main class="flex-1 overflow-y-auto p-6">
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6">
       <router-outlet />
     </main>
   </div>

@@ -21,7 +21,8 @@ export class AdminLayout {
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
-  readonly sidebarOpen = signal(true);
+  readonly sidebarOpen = signal(true); // desktop rail collapse
+  readonly mobileOpen = signal(false); // mobile off-canvas drawer
 
   logout() {
     this.auth.logout();
@@ -50,5 +51,13 @@ export class AdminLayout {
 
   toggleSidebar() {
     this.sidebarOpen.update((v) => !v);
+  }
+
+  toggleMobile() {
+    this.mobileOpen.update((v) => !v);
+  }
+
+  closeMobile() {
+    this.mobileOpen.set(false);
   }
 }

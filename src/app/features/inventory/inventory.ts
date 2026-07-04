@@ -8,6 +8,7 @@ import { Modal } from '../../shared/ui/modal/modal';
 import { TextInput } from '../../shared/ui/text-input/text-input';
 import { SelectInput, SelectOption } from '../../shared/ui/select-input/select-input';
 import { Button } from '../../shared/ui/button/button';
+import { Icon } from '../../shared/ui/icon/icon';
 import { ProductService } from '../../core/services/product.service';
 import { VendorService } from '../../core/services/vendor.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -17,7 +18,7 @@ import { Product } from '../../core/models';
   selector: 'app-inventory',
   imports: [
     CurrencyPipe, ReactiveFormsModule, PageHeader, StatusBadge, StatCard,
-    Modal, TextInput, SelectInput, Button,
+    Modal, TextInput, SelectInput, Button, Icon,
   ],
   templateUrl: './inventory.html',
 })

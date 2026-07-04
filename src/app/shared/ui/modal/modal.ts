@@ -10,9 +10,9 @@ import { Icon } from '../icon/icon';
   imports: [Icon],
   template: `
     <div class="animate-fade fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-ink/40" (click)="close.emit()"></div>
+      <div class="absolute inset-0 bg-ink/40 backdrop-blur-[2px]" (click)="close.emit()"></div>
 
-      <div class="relative flex max-h-[90vh] w-full max-w-lg flex-col rounded-xl bg-surface shadow-[var(--shadow-pop)]">
+      <div class="animate-modal relative flex max-h-[90vh] w-full max-w-lg flex-col rounded-2xl bg-surface shadow-[var(--shadow-pop)]">
         <div class="flex items-center justify-between border-b border-line px-5 py-4">
           <h3 class="text-base font-semibold text-ink">{{ title() }}</h3>
           <button

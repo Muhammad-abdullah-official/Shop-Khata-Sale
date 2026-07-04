@@ -6,22 +6,27 @@
     <div class="lg:col-span-2">
       <div class="card divide-y divide-line">
         @for (item of cart.items(); track item.productId) {
-          <div class="flex items-center gap-4 p-4">
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-3 p-4 sm:flex-nowrap">
+            <!-- line 1: image + name -->
             <div class="grid h-14 w-14 shrink-0 place-items-center rounded-lg bg-canvas text-faint"><app-icon name="package" [size]="24" /></div>
             <div class="min-w-0 flex-1">
-              <h3 class="truncate text-sm font-semibold text-ink">{{ item.name }}</h3>
+              <h3 class="truncate text-sm font-semibold text-ink" [title]="item.name">{{ item.name }}</h3>
               <p class="text-sm text-muted">{{ item.salePrice | currency: 'PKR ' : 'symbol' : '1.0-0' }} / {{ item.unit }}</p>
             </div>
-            <!-- qty stepper (respects step & max) -->
-            <div class="flex items-center rounded-lg border border-line">
-              <button (click)="cart.setQty(item.productId, item.qty - item.step)" class="grid h-8 w-8 place-items-center text-muted transition hover:text-ink" aria-label="Decrease"><app-icon name="minus" [size]="15" /></button>
-              <span class="w-16 text-center text-sm font-semibold text-ink">{{ item.qty }} {{ item.unit }}</span>
-              <button (click)="cart.setQty(item.productId, item.qty + item.step)" class="grid h-8 w-8 place-items-center text-muted transition hover:text-ink disabled:opacity-30" [disabled]="item.qty >= item.maxOrder" aria-label="Increase"><app-icon name="plus" [size]="15" /></button>
+
+            <!-- controls: wrap to a full-width second line on mobile, inline on desktop -->
+            <div class="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
+              <!-- qty stepper (respects step & max) -->
+              <div class="flex items-center rounded-lg border border-line">
+                <button (click)="cart.setQty(item.productId, item.qty - item.step)" class="grid h-8 w-8 place-items-center text-muted transition hover:text-ink" aria-label="Decrease"><app-icon name="minus" [size]="15" /></button>
+                <span class="w-16 text-center text-sm font-semibold text-ink">{{ item.qty }} {{ item.unit }}</span>
+                <button (click)="cart.setQty(item.productId, item.qty + item.step)" class="grid h-8 w-8 place-items-center text-muted transition hover:text-ink disabled:opacity-30" [disabled]="item.qty >= item.maxOrder" aria-label="Increase"><app-icon name="plus" [size]="15" /></button>
+              </div>
+              <div class="min-w-[5rem] text-right text-sm font-bold text-ink">
+                {{ item.qty * item.salePrice | currency: 'PKR ' : 'symbol' : '1.0-0' }}
+              </div>
+              <button (click)="cart.remove(item.productId)" class="grid h-8 w-8 shrink-0 place-items-center text-faint transition hover:text-danger" aria-label="Remove"><app-icon name="trash" [size]="17" /></button>
             </div>
-            <div class="w-24 text-right text-sm font-bold text-ink">
-              {{ item.qty * item.salePrice | currency: 'PKR ' : 'symbol' : '1.0-0' }}
-            </div>
-            <button (click)="cart.remove(item.productId)" class="grid h-8 w-8 place-items-center text-faint transition hover:text-danger" aria-label="Remove"><app-icon name="trash" [size]="17" /></button>
           </div>
         }
       </div>
