@@ -111,9 +111,55 @@
           <div class="text-sm font-medium text-ink">Today</div>
           <div class="text-xs text-muted">4 July 2026</div>
         </div>
-        <button class="grid h-9 w-9 place-items-center rounded-lg text-muted transition-colors hover:bg-canvas hover:text-ink" aria-label="Notifications">
-          <app-icon name="bell" [size]="19" />
-        </button>
+        <div class="relative">
+          <button
+            (click)="toggleNotif()"
+            class="relative grid h-9 w-9 place-items-center rounded-lg text-muted transition-colors hover:bg-canvas hover:text-ink"
+            aria-label="Notifications"
+          >
+            <app-icon name="bell" [size]="19" />
+            @if (notify.unread() > 0) {
+              <span class="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
+                {{ notify.unread() }}
+              </span>
+            }
+          </button>
+
+          @if (notifOpen()) {
+            <!-- click-away backdrop -->
+            <div class="fixed inset-0 z-40" (click)="notifOpen.set(false)"></div>
+            <div class="animate-fade absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-line bg-surface shadow-[var(--shadow-pop)]">
+              <div class="flex items-center justify-between border-b border-line px-4 py-3">
+                <span class="text-sm font-semibold text-ink">Notifications</span>
+                @if (notify.items().length) {
+                  <button (click)="notify.clear()" class="text-xs font-medium text-muted hover:text-ink">Clear</button>
+                }
+              </div>
+              <div class="max-h-96 overflow-y-auto">
+                @for (n of notify.items(); track n.id) {
+                  <button
+                    (click)="openNotif(n.link)"
+                    class="flex w-full items-start gap-3 border-b border-line px-4 py-3 text-left transition-colors last:border-0 hover:bg-canvas"
+                  >
+                    <span class="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-canvas text-ink">
+                      <app-icon [name]="n.icon" [size]="16" />
+                    </span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block text-sm font-semibold text-ink">{{ n.title }}</span>
+                      <span class="block text-xs text-muted">{{ n.message }}</span>
+                      <span class="mt-0.5 block text-[11px] text-faint">{{ n.at }}</span>
+                    </span>
+                  </button>
+                } @empty {
+                  <div class="grid place-items-center px-4 py-10 text-center text-faint">
+                    <app-icon name="bell" [size]="28" />
+                    <p class="mt-2 text-sm text-muted">Koi notification nahi</p>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
       </div>
     </header>
 

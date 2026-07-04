@@ -4,6 +4,7 @@ import { ProductService } from './product.service';
 import { CustomerService } from './customer.service';
 import { LedgerService } from './ledger.service';
 import { ActivityService } from './activity.service';
+import { NotificationService } from './notification.service';
 
 @Injectable({ providedIn: 'root' })
 export class OrderService {
@@ -11,6 +12,7 @@ export class OrderService {
   private readonly customerSvc = inject(CustomerService);
   private readonly ledgerSvc = inject(LedgerService);
   private readonly activity = inject(ActivityService);
+  private readonly notify = inject(NotificationService);
   private orderSeq = 1043;
   private readonly _orders = signal<Order[]>([
     {
@@ -156,6 +158,12 @@ export class OrderService {
       this.ledgerSvc.addDebit(params.customerId, params.customerName, total, balanceAfter, `Order ${order.id} (udhaar)`);
     }
     this.activity.log('Placed order', order.id, 'cart');
+    this.notify.push({
+      title: 'New order',
+      message: `${order.customerName} — ${order.id} · PKR ${total.toLocaleString()}`,
+      icon: 'receipt',
+      link: '/admin/orders',
+    });
     return order.id;
   }
 
@@ -204,6 +212,12 @@ export class OrderService {
       list.map((o) => (o.id === orderId ? { ...o, cancelRequested: true } : o)),
     );
     this.activity.log('Requested cancel', orderId, 'clock');
+    this.notify.push({
+      title: 'Cancel request',
+      message: `${order.customerName} ne ${orderId} cancel karne ki request bheji`,
+      icon: 'x',
+      link: '/admin/orders',
+    });
     return false;
   }
 
