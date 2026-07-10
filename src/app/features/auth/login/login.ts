@@ -34,13 +34,17 @@ export class Login {
     this.form.setValue(creds);
   }
 
-  submit() {
+  readonly busy = signal(false);
+
+  async submit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
     const { email, password } = this.form.getRawValue();
-    const err = this.auth.login(email, password);
+    this.busy.set(true);
+    const err = await this.auth.login(email, password);
+    this.busy.set(false);
     if (err) {
       this.error.set(err);
       return;

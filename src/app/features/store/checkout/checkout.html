@@ -96,8 +96,12 @@
             <span>{{ cart.total() | currency: 'PKR ' : 'symbol' : '1.0-0' }}</span>
           </div>
         </div>
-        <button (click)="placeOrder()" class="mt-5 block w-full rounded-lg bg-brand py-2.5 text-center text-sm font-semibold text-white transition hover:bg-brand-dark">
-          Place Order
+        <button
+          (click)="placeOrder()"
+          [disabled]="placing()"
+          class="mt-5 block w-full rounded-lg bg-brand py-2.5 text-center text-sm font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+        >
+          {{ placing() ? 'Placing order…' : 'Place Order' }}
         </button>
       </div>
     </div>

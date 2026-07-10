@@ -40,8 +40,10 @@ export class Checkout {
     { value: 'card_gateway', label: 'Card / Wallet', desc: 'Jald aa raha hai', icon: 'credit-card', disabled: true },
   ];
 
-  /** payment screenshot as a data URL (manual_transfer only) */
+  /** payment screenshot preview (data URL) + the file we will upload */
   readonly proof = signal<string | null>(null);
+  private readonly proofFile = signal<File | null>(null);
+  readonly placing = signal(false);
 
   readonly form = this.fb.nonNullable.group({
     address: [this.auth.currentUser()?.address ?? '', Validators.required],
@@ -59,6 +61,7 @@ export class Checkout {
       this.toast.error('Image 5MB se choti honi chahiye');
       return;
     }
+    this.proofFile.set(file);
     const reader = new FileReader();
     reader.onload = () => this.proof.set(reader.result as string);
     reader.readAsDataURL(file);
@@ -66,27 +69,50 @@ export class Checkout {
 
   removeProof() {
     this.proof.set(null);
+    this.proofFile.set(null);
   }
 
-  placeOrder() {
+  async placeOrder(): Promise<void> {
     if (this.form.invalid || !this.cart.items().length) {
       this.form.markAllAsTouched();
       return;
     }
     // manual transfer needs a payment screenshot
-    if (this.method() === 'manual_transfer' && !this.proof()) {
+    if (this.method() === 'manual_transfer' && !this.proofFile()) {
       this.toast.error('Pehle payment ka screenshot upload karein');
       return;
     }
+
+    this.placing.set(true);
+
+    // upload the screenshot to the private bucket; we store only its path
+    let proofPath: string | undefined;
+    const file = this.proofFile();
+    if (this.method() === 'manual_transfer' && file) {
+      const path = await this.orderSvc.uploadProof(file);
+      if (!path) {
+        this.placing.set(false);
+        this.toast.error('Screenshot upload nahi ho saka');
+        return;
+      }
+      proofPath = path;
+    }
+
     const user = this.auth.currentUser();
-    const id = this.orderSvc.placeOrder({
+    const id = await this.orderSvc.placeOrder({
       customerId: user?.id ?? null,
       customerName: user?.name ?? 'Guest',
       items: this.cart.items(),
       paymentMethod: this.method(),
       deliveryAddress: this.form.getRawValue().address,
-      paymentProofUrl: this.method() === 'manual_transfer' ? this.proof()! : undefined,
+      paymentProofUrl: proofPath,
     });
+
+    this.placing.set(false);
+    if (!id) {
+      this.toast.error('Order place nahi ho saka — dobara koshish karein');
+      return;
+    }
     this.cart.clear();
     this.toast.success('Order place ho gaya!');
     this.router.navigate(['/store/order-success', id]);

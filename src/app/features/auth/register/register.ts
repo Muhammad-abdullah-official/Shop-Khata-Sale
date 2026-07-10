@@ -28,12 +28,16 @@ export class Register {
     password: ['', [Validators.required, Validators.minLength(5)]],
   });
 
-  submit() {
+  readonly busy = signal(false);
+
+  async submit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
-    const err = this.auth.register(this.form.getRawValue());
+    this.busy.set(true);
+    const err = await this.auth.register(this.form.getRawValue());
+    this.busy.set(false);
     if (err) {
       this.error.set(err);
       return;

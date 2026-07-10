@@ -82,18 +82,18 @@
         <span class="mb-1 block text-sm font-medium text-ink">Image <span class="font-normal text-muted">(optional)</span></span>
         <div class="flex items-center gap-3">
           <span class="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-lg border border-line bg-canvas text-faint">
-            @if (image()) {
-              <img [src]="image()" alt="preview" class="h-full w-full object-cover" />
+            @if (imagePreview()) {
+              <img [src]="imagePreview()" alt="preview" class="h-full w-full object-cover" />
             } @else {
               <app-icon name="package" [size]="24" />
             }
           </span>
           <label class="cursor-pointer rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium text-ink transition hover:border-ink">
-            {{ image() ? 'Change' : 'Upload' }} image
+            {{ imagePreview() ? 'Change' : 'Upload' }} image
             <input type="file" accept="image/*" class="hidden" (change)="onImageSelected($event)" />
           </label>
-          @if (image()) {
-            <button type="button" (click)="image.set(null)" class="text-sm text-danger hover:underline">Remove</button>
+          @if (imagePreview()) {
+            <button type="button" (click)="removeImage()" class="text-sm text-danger hover:underline">Remove</button>
           }
         </div>
       </div>
@@ -137,7 +137,9 @@
 
     <div footer>
       <app-button variant="ghost" (click)="showForm.set(false)">Cancel</app-button>
-      <app-button variant="primary" (click)="submit()">{{ editingId() ? 'Save Changes' : 'Save Product' }}</app-button>
+      <app-button variant="primary" [disabled]="saving()" (click)="submit()">
+        {{ saving() ? 'Saving…' : editingId() ? 'Save Changes' : 'Save Product' }}
+      </app-button>
     </div>
   </app-modal>
 }

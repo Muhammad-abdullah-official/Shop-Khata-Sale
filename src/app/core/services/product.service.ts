@@ -1,56 +1,108 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Product } from '../models';
+import { SupabaseService } from './supabase.service';
+import { AuthService } from './auth.service';
 
-/**
- * Phase 1: data is mocked in-memory with signals.
- * Phase 2: replace the seed array with Supabase queries — the public
- * API (signals + methods) stays the same, so components don't change.
- */
+const TABLE = 'products';
+
+function toProduct(r: Record<string, any>): Product {
+  return {
+    id: r['id'],
+    name: r['name'],
+    category: r['category'],
+    costPrice: Number(r['cost_price']),
+    salePrice: Number(r['sale_price']),
+    stockQty: Number(r['stock_qty']),
+    reorderLevel: Number(r['reorder_level']),
+    unit: r['unit'],
+    minOrder: Number(r['min_order']),
+    maxOrder: Number(r['max_order']),
+    step: Number(r['step']),
+    imageUrl: r['image_url'] ?? undefined,
+    isPublished: r['is_published'],
+  };
+}
+
+function toRow(p: Omit<Product, 'id'>) {
+  return {
+    name: p.name,
+    category: p.category,
+    cost_price: p.costPrice,
+    sale_price: p.salePrice,
+    stock_qty: p.stockQty,
+    reorder_level: p.reorderLevel,
+    unit: p.unit,
+    min_order: p.minOrder,
+    max_order: p.maxOrder,
+    step: p.step,
+    image_url: p.imageUrl ?? null,
+    is_published: p.isPublished,
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProductService {
-  private readonly _products = signal<Product[]>([
-    { id: 'p1', name: 'Sugar (loose)', category: 'Grocery', costPrice: 130, salePrice: 145, stockQty: 60, reorderLevel: 20, unit: 'kg', minOrder: 1, maxOrder: 20, step: 0.5, isPublished: true },
-    { id: 'p2', name: 'Cooking Oil 1L', category: 'Grocery', costPrice: 480, salePrice: 540, stockQty: 12, reorderLevel: 15, unit: 'pcs', minOrder: 1, maxOrder: 12, step: 1, isPublished: true },
-    { id: 'p3', name: 'Basmati Rice (loose)', category: 'Grocery', costPrice: 230, salePrice: 258, stockQty: 25, reorderLevel: 10, unit: 'kg', minOrder: 1, maxOrder: 25, step: 0.5, isPublished: true },
-    { id: 'p4', name: 'Tea Pack 950g', category: 'Beverages', costPrice: 1100, salePrice: 1250, stockQty: 8, reorderLevel: 12, unit: 'pcs', minOrder: 1, maxOrder: 6, step: 1, isPublished: true },
-    { id: 'p5', name: 'Wheat Flour (loose)', category: 'Grocery', costPrice: 130, salePrice: 142, stockQty: 40, reorderLevel: 15, unit: 'kg', minOrder: 1, maxOrder: 40, step: 1, isPublished: true },
-    { id: 'p6', name: 'Soap Bar', category: 'Personal Care', costPrice: 95, salePrice: 120, stockQty: 5, reorderLevel: 25, unit: 'pcs', minOrder: 1, maxOrder: 10, step: 1, isPublished: false },
-    { id: 'p7', name: 'Milk Pack 1L', category: 'Dairy', costPrice: 190, salePrice: 210, stockQty: 30, reorderLevel: 20, unit: 'pcs', minOrder: 1, maxOrder: 12, step: 1, isPublished: true },
-    { id: 'p8', name: 'Salt 800g', category: 'Grocery', costPrice: 40, salePrice: 55, stockQty: 70, reorderLevel: 20, unit: 'pcs', minOrder: 1, maxOrder: 10, step: 1, isPublished: true },
-  ]);
+  private readonly supabase = inject(SupabaseService);
+  private readonly auth = inject(AuthService);
 
+  private readonly _products = signal<Product[]>([]);
   readonly products = this._products.asReadonly();
+  readonly loading = signal(false);
 
   readonly lowStock = computed(() =>
     this._products().filter((p) => p.stockQty <= p.reorderLevel),
   );
-
   readonly totalStockValue = computed(() =>
     this._products().reduce((sum, p) => sum + p.stockQty * p.costPrice, 0),
   );
-
   readonly totalProducts = computed(() => this._products().length);
 
-  /** Add a new product to the catalog. */
-  add(data: Omit<Product, 'id'>): void {
-    const product: Product = { ...data, id: crypto.randomUUID() };
-    this._products.update((list) => [product, ...list]);
+  constructor() {
+    // reload whenever the signed-in user changes (RLS changes what's visible)
+    effect(() => {
+      this.auth.currentUser();
+      void this.load();
+    });
   }
 
-  update(id: string, data: Omit<Product, 'id'>): void {
-    this._products.update((list) =>
-      list.map((p) => (p.id === id ? { ...data, id } : p)),
-    );
+  async load(): Promise<void> {
+    this.loading.set(true);
+    const { data, error } = await this.supabase.client
+      .from(TABLE)
+      .select('*')
+      .order('created_at', { ascending: false });
+    this.loading.set(false);
+    if (error || !data) return;
+    this._products.set(data.map(toProduct));
   }
 
-  remove(id: string): void {
-    this._products.update((list) => list.filter((p) => p.id !== id));
+  async add(data: Omit<Product, 'id'>): Promise<void> {
+    const { error } = await this.supabase.client.from(TABLE).insert(toRow(data));
+    if (!error) await this.load();
   }
 
-  /** Increase stock for a product (used by Stock In / Purchase). */
-  stockIn(productId: string, qty: number): void {
-    this._products.update((list) =>
-      list.map((p) => (p.id === productId ? { ...p, stockQty: p.stockQty + qty } : p)),
-    );
+  async update(id: string, data: Omit<Product, 'id'>): Promise<void> {
+    const { error } = await this.supabase.client.from(TABLE).update(toRow(data)).eq('id', id);
+    if (!error) await this.load();
+  }
+
+  async remove(id: string): Promise<void> {
+    const { error } = await this.supabase.client.from(TABLE).delete().eq('id', id);
+    if (!error) await this.load();
+  }
+
+  /** Atomic stock change (negative to deduct). Uses an RPC to avoid lost updates. */
+  async stockIn(productId: string, qty: number): Promise<void> {
+    const { error } = await this.supabase.client.rpc('adjust_stock', {
+      p_id: productId,
+      p_delta: qty,
+    });
+    if (!error) await this.load();
+  }
+
+  /** Upload a product image to storage, returns its public URL. */
+  async uploadImage(file: File): Promise<string | null> {
+    const path = await this.supabase.upload('product-images', file);
+    return path ? this.supabase.publicUrl('product-images', path) : null;
   }
 }

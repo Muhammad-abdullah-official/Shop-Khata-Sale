@@ -1,21 +1,14 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { User } from '../models';
-import { CustomerService } from './customer.service';
+import { SupabaseService } from './supabase.service';
+import { Role, User } from '../models';
 
 /**
- * Phase 1: in-memory mock auth. currentUser lives for the session.
- * Phase 2: replace with Supabase Auth — the public API (currentUser,
- * login, register, logout, role getters) stays the same.
+ * Supabase Auth. `currentUser` mirrors the `profiles` row of the signed-in
+ * user. Session restore is async, so guards must await `whenReady()`.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly customerSvc = inject(CustomerService);
-
-  private readonly _users = signal<User[]>([
-    { id: 'u-owner', name: 'Shop Owner', email: 'owner@shop.pk', password: 'owner123', role: 'owner', phone: '0300-0000000', address: 'Main Market' },
-    { id: 'e1', name: 'Imran Shah', email: 'staff@shop.pk', password: 'staff123', role: 'staff', phone: '0300-7778889', address: 'Shop' },
-    { id: 'c1', name: 'Ahmed Raza', email: 'ahmed@test.pk', password: '12345', role: 'customer', phone: '0300-1112223', address: 'Gulshan Block 5, Karachi' },
-  ]);
+  private readonly supabase = inject(SupabaseService);
 
   private readonly _currentUser = signal<User | null>(null);
   readonly currentUser = this._currentUser.asReadonly();
@@ -26,71 +19,104 @@ export class AuthService {
   readonly isCustomer = computed(() => this._currentUser()?.role === 'customer');
   readonly isStaffOrOwner = computed(() => this.isOwner() || this.isStaff());
 
-  /** Create a staff login (used when owner adds an employee with credentials).
-   *  Returns an error message, or the new user id on success. Pass an id to keep
-   *  it in sync with the employee record. */
-  addStaff(data: { id?: string; name: string; email: string; password: string; phone: string }): string {
-    const exists = this._users().some(
-      (u) => u.email.toLowerCase() === data.email.trim().toLowerCase(),
-    );
-    if (exists) return 'Ye email pehle se registered hai.';
-    const user: User = {
-      id: data.id ?? crypto.randomUUID(),
-      name: data.name,
-      email: data.email,
-      password: data.password,
-      role: 'staff',
-      phone: data.phone,
-      address: 'Shop',
-    };
-    this._users.update((list) => [...list, user]);
-    return '';
+  /** Resolves once the initial session check has finished. */
+  private readonly ready: Promise<void>;
+
+  constructor() {
+    this.ready = this.supabase.client.auth.getSession().then(async ({ data }) => {
+      if (data.session?.user) await this.loadProfile(data.session.user.id);
+    });
+
+    this.supabase.client.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) void this.loadProfile(session.user.id);
+      else this._currentUser.set(null);
+    });
   }
 
-  removeStaffByName(name: string): void {
-    this._users.update((list) =>
-      list.filter((u) => !(u.role === 'staff' && u.name === name)),
-    );
+  whenReady(): Promise<void> {
+    return this.ready;
+  }
+
+  private async loadProfile(userId: string): Promise<void> {
+    const { data, error } = await this.supabase.client
+      .from('profiles')
+      .select('id, name, email, phone, address, role')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data) {
+      this._currentUser.set(null);
+      return;
+    }
+    this._currentUser.set({
+      id: data.id,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      address: data.address,
+      role: data.role as Role,
+    });
   }
 
   /** Returns null on success, or an error message. */
-  login(email: string, password: string): string | null {
-    const user = this._users().find(
-      (u) => u.email.toLowerCase() === email.trim().toLowerCase(),
-    );
-    if (!user) return 'Is email se koi account nahi mila.';
-    if (user.password !== password) return 'Password ghalat hai.';
-    this._currentUser.set(user);
+  async login(email: string, password: string): Promise<string | null> {
+    const { data, error } = await this.supabase.client.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) return error.message;
+    if (data.user) await this.loadProfile(data.user.id);
     return null;
   }
 
-  /** Registers a new customer and logs them in. Returns null on success. */
-  register(data: Omit<User, 'id' | 'role' | 'password'> & { password: string }): string | null {
-    const exists = this._users().some(
-      (u) => u.email.toLowerCase() === data.email.trim().toLowerCase(),
-    );
-    if (exists) return 'Ye email pehle se registered hai.';
-
-    const id = crypto.randomUUID();
-    const user: User = { ...data, id, role: 'customer' };
-    this._users.update((list) => [...list, user]);
-
-    // reflect in the admin's customer list too — same id keeps udhaar/orders in sync
-    this.customerSvc.add(
-      {
-        name: data.name,
-        phone: data.phone,
-        address: data.address,
-        joinedDate: new Date().toISOString().slice(0, 10),
+  /** Registers a customer (profile + customers row are created by a DB trigger). */
+  async register(data: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    password: string;
+  }): Promise<string | null> {
+    const { data: res, error } = await this.supabase.client.auth.signUp({
+      email: data.email.trim(),
+      password: data.password,
+      options: {
+        data: {
+          name: data.name,
+          phone: data.phone,
+          address: data.address,
+          role: 'customer',
+        },
       },
-      id,
-    );
-
-    this._currentUser.set(user);
+    });
+    if (error) return error.message;
+    if (!res.session) return 'Account ban gaya — email confirm karke login karein.';
+    if (res.user) await this.loadProfile(res.user.id);
     return null;
   }
 
-  logout(): void {
+  /**
+   * Owner creates a staff login. Uses a session-less client so the owner
+   * stays signed in. Returns the new user id, or an error message.
+   */
+  async addStaff(data: {
+    name: string;
+    email: string;
+    password: string;
+    phone: string;
+  }): Promise<{ id?: string; error?: string }> {
+    const { data: res, error } = await this.supabase.signupClient.auth.signUp({
+      email: data.email.trim(),
+      password: data.password,
+      options: { data: { name: data.name, phone: data.phone, role: 'staff' } },
+    });
+    if (error) return { error: error.message };
+    if (!res.user) return { error: 'Staff account nahi bana.' };
+    return { id: res.user.id };
+  }
+
+  async logout(): Promise<void> {
+    await this.supabase.client.auth.signOut();
     this._currentUser.set(null);
   }
 }

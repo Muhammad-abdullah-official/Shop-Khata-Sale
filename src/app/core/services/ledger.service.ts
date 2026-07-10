@@ -1,55 +1,96 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, effect, inject, signal } from '@angular/core';
 import { LedgerEntry } from '../models';
+import { SupabaseService } from './supabase.service';
+import { AuthService } from './auth.service';
 import { ActivityService } from './activity.service';
+
+const TABLE = 'ledger';
+
+function toEntry(r: Record<string, any>): LedgerEntry {
+  return {
+    id: r['id'],
+    customerId: r['customer_id'],
+    customerName: r['customer_name'],
+    type: r['type'],
+    amount: Number(r['amount']),
+    balanceAfter: Number(r['balance_after']),
+    date: r['date'],
+    note: r['note'],
+  };
+}
 
 @Injectable({ providedIn: 'root' })
 export class LedgerService {
+  private readonly supabase = inject(SupabaseService);
+  private readonly auth = inject(AuthService);
   private readonly activity = inject(ActivityService);
 
-  private readonly _entries = signal<LedgerEntry[]>([
-    { id: 'l1', customerId: 'c3', customerName: 'Bilal Hussain', type: 'debit', amount: 2500, balanceAfter: 7500, date: '2026-07-03', note: 'Order ORD-1041 (udhaar)' },
-    { id: 'l2', customerId: 'c1', customerName: 'Ahmed Raza', type: 'debit', amount: 1200, balanceAfter: 3200, date: '2026-06-28', note: 'Grocery udhaar' },
-    { id: 'l3', customerId: 'c1', customerName: 'Ahmed Raza', type: 'credit', amount: 2000, balanceAfter: 2000, date: '2026-06-20', note: 'Payment received' },
-    { id: 'l4', customerId: 'c4', customerName: 'Fatima Noor', type: 'debit', amount: 1200, balanceAfter: 1200, date: '2026-06-15', note: 'Order udhaar' },
-    { id: 'l5', customerId: 'c3', customerName: 'Bilal Hussain', type: 'debit', amount: 5000, balanceAfter: 5000, date: '2026-06-10', note: 'Bulk order udhaar' },
-  ]);
-
+  private readonly _entries = signal<LedgerEntry[]>([]);
   readonly entries = this._entries.asReadonly();
 
-  /** All ledger entries for one customer, newest first. */
+  constructor() {
+    effect(() => {
+      this.auth.currentUser();
+      void this.load();
+    });
+  }
+
   entriesForCustomer(customerId: string): LedgerEntry[] {
     return this._entries().filter((e) => e.customerId === customerId);
   }
 
+  async load(): Promise<void> {
+    if (!this.auth.isLoggedIn()) {
+      this._entries.set([]);
+      return;
+    }
+    const { data, error } = await this.supabase.client
+      .from(TABLE)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(300);
+    if (error || !data) return;
+    this._entries.set(data.map(toEntry));
+  }
+
   /** Record udhaar given to a customer (debit entry). */
-  addDebit(customerId: string, customerName: string, amount: number, balanceAfter: number, note: string): void {
-    const entry: LedgerEntry = {
-      id: crypto.randomUUID(),
-      customerId,
-      customerName,
+  async addDebit(
+    customerId: string,
+    customerName: string,
+    amount: number,
+    balanceAfter: number,
+    note: string,
+  ): Promise<void> {
+    const { error } = await this.supabase.client.from(TABLE).insert({
+      customer_id: customerId,
+      customer_name: customerName,
       type: 'debit',
       amount,
-      balanceAfter,
-      date: new Date().toISOString().slice(0, 10),
+      balance_after: balanceAfter,
       note,
-    };
-    this._entries.update((list) => [entry, ...list]);
-    this.activity.log('Added udhaar', `PKR ${amount.toLocaleString()} — ${customerName}`, 'notebook');
+    });
+    if (error) return;
+    await this.load();
+    await this.activity.log('Added udhaar', `PKR ${amount.toLocaleString()} — ${customerName}`, 'notebook');
   }
 
   /** Record a payment received from a customer (credit entry). */
-  addCredit(customerId: string, customerName: string, amount: number, balanceAfter: number): void {
-    const entry: LedgerEntry = {
-      id: crypto.randomUUID(),
-      customerId,
-      customerName,
+  async addCredit(
+    customerId: string,
+    customerName: string,
+    amount: number,
+    balanceAfter: number,
+  ): Promise<void> {
+    const { error } = await this.supabase.client.from(TABLE).insert({
+      customer_id: customerId,
+      customer_name: customerName,
       type: 'credit',
       amount,
-      balanceAfter,
-      date: new Date().toISOString().slice(0, 10),
+      balance_after: balanceAfter,
       note: 'Payment received',
-    };
-    this._entries.update((list) => [entry, ...list]);
-    this.activity.log('Received payment', `PKR ${amount.toLocaleString()} from ${customerName}`, 'wallet');
+    });
+    if (error) return;
+    await this.load();
+    await this.activity.log('Received payment', `PKR ${amount.toLocaleString()} from ${customerName}`, 'wallet');
   }
 }

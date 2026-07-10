@@ -6,11 +6,11 @@
 
 export type Role = 'owner' | 'staff' | 'customer';
 
+/** Mirrors the `profiles` table (1:1 with Supabase auth.users). */
 export interface User {
   id: string;
   name: string;
   email: string;
-  password: string; // Phase 1 mock only — Phase 2 Supabase Auth (never store plain passwords)
   role: Role;
   phone: string;
   address: string;

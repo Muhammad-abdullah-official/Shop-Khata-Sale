@@ -43,7 +43,9 @@
           <div class="rounded-lg bg-danger-light px-3 py-2 text-sm font-medium text-red-700">{{ error() }}</div>
         }
 
-        <app-button type="submit" variant="primary" [full]="true">Create Account</app-button>
+        <app-button type="submit" variant="primary" [full]="true" [disabled]="busy()">
+          {{ busy() ? 'Creating…' : 'Create Account' }}
+        </app-button>
       </form>
 
       <p class="mt-6 text-center text-sm text-muted">

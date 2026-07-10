@@ -26,8 +26,13 @@ export class Products {
 
   readonly products = this.productSvc.products;
   readonly showForm = signal(false);
+  readonly saving = signal(false);
   readonly editingId = signal<string | null>(null);
-  readonly image = signal<string | null>(null);
+
+  /** preview shown in the form (data-URL for a new pick, or the stored URL) */
+  readonly imagePreview = signal<string | null>(null);
+  private readonly imageFile = signal<File | null>(null);
+  private readonly existingUrl = signal<string | null>(null);
 
   readonly modalTitle = computed(() => (this.editingId() ? 'Edit Product' : 'Add Product'));
 
@@ -112,9 +117,16 @@ export class Products {
     if (!file) return;
     if (!file.type.startsWith('image/')) return this.toast.error('Sirf image upload karein');
     if (file.size > 3 * 1024 * 1024) return this.toast.error('Image 3MB se choti honi chahiye');
+    this.imageFile.set(file);
     const reader = new FileReader();
-    reader.onload = () => this.image.set(reader.result as string);
+    reader.onload = () => this.imagePreview.set(reader.result as string);
     reader.readAsDataURL(file);
+  }
+
+  removeImage() {
+    this.imageFile.set(null);
+    this.imagePreview.set(null);
+    this.existingUrl.set(null);
   }
 
   openForm(): void {
@@ -127,7 +139,7 @@ export class Products {
       },
       { emitEvent: false },
     );
-    this.image.set(null);
+    this.removeImage();
     this.updatePreview();
     this.showForm.set(true);
   }
@@ -142,12 +154,14 @@ export class Products {
       },
       { emitEvent: false },
     );
-    this.image.set(p.imageUrl ?? null);
+    this.imageFile.set(null);
+    this.existingUrl.set(p.imageUrl ?? null);
+    this.imagePreview.set(p.imageUrl ?? null);
     this.updatePreview();
     this.showForm.set(true);
   }
 
-  submit(): void {
+  async submit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -161,15 +175,33 @@ export class Products {
       this.toast.error('Step 0 se bara hona chahiye');
       return;
     }
-    const data = { ...v, imageUrl: this.image() ?? undefined };
+
+    this.saving.set(true);
+
+    // upload a newly picked image; otherwise keep whatever was already stored
+    let imageUrl = this.existingUrl() ?? undefined;
+    const file = this.imageFile();
+    if (file) {
+      const url = await this.productSvc.uploadImage(file);
+      if (!url) {
+        this.saving.set(false);
+        this.toast.error('Image upload nahi ho saki');
+        return;
+      }
+      imageUrl = url;
+    }
+    if (!this.imagePreview()) imageUrl = undefined; // user removed it
+
+    const data = { ...v, imageUrl };
     const id = this.editingId();
     if (id) {
-      this.productSvc.update(id, data);
+      await this.productSvc.update(id, data);
       this.toast.success('Product update ho gaya');
     } else {
-      this.productSvc.add(data);
+      await this.productSvc.add(data);
       this.toast.success('Product add ho gaya');
     }
+    this.saving.set(false);
     this.showForm.set(false);
   }
 
@@ -179,8 +211,8 @@ export class Products {
       message: `"${p.name}" delete ho jayega. Ye wapas nahi aayega.`,
       confirmLabel: 'Delete',
       danger: true,
-      onConfirm: () => {
-        this.productSvc.remove(p.id);
+      onConfirm: async () => {
+        await this.productSvc.remove(p.id);
         this.toast.success('Product delete ho gaya');
       },
     });

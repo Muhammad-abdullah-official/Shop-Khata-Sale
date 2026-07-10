@@ -68,8 +68,8 @@ export class Account {
       message: `Order ${o.id} cancel karna hai?` + (o.orderStatus !== 'pending' ? ' Payment refund owner ki permission se hoga.' : ''),
       confirmLabel: 'Yes, cancel',
       danger: true,
-      onConfirm: () => {
-        const done = this.orderSvc.customerCancel(o.id);
+      onConfirm: async () => {
+        const done = await this.orderSvc.customerCancel(o.id);
         if (done) this.toast.success('Order cancel ho gaya');
         else this.toast.info('Cancel request bhej di — owner approve karega');
       },
