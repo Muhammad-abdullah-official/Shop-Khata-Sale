@@ -68,26 +68,37 @@ export class Employees {
     this.showForm.set(true);
   }
 
-  submit(): void {
+  async submit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
     const v = this.form.getRawValue();
     const id = this.editingId();
+
     if (id) {
-      this.employeeSvc.update(id, { name: v.name, phone: v.phone, monthlySalary: v.monthlySalary });
+      await this.employeeSvc.update(id, { name: v.name, phone: v.phone, monthlySalary: v.monthlySalary });
       this.toast.success('Employee update ho gaya');
-    } else {
-      const empId = this.employeeSvc.add({ name: v.name, phone: v.phone, monthlySalary: v.monthlySalary, joinDate: v.joinDate });
-      // optional: create a login so this employee can sign in as staff
-      if (v.email.trim() && v.password.trim()) {
-        const err = this.auth.addStaff({ id: empId, name: v.name, email: v.email, password: v.password, phone: v.phone });
-        if (err) this.toast.error(err);
-        else this.toast.success('Employee + login ban gaya');
-      } else {
-        this.toast.success('Employee add ho gaya');
+      this.showForm.set(false);
+      return;
+    }
+
+    const base = { name: v.name, phone: v.phone, monthlySalary: v.monthlySalary, joinDate: v.joinDate };
+
+    // optional: create a staff login first, then use its uid as the employee id
+    if (v.email.trim() && v.password.trim()) {
+      const res = await this.auth.addStaff({
+        name: v.name, email: v.email, password: v.password, phone: v.phone,
+      });
+      if (res.error) {
+        this.toast.error(res.error);
+        return;
       }
+      await this.employeeSvc.add(base, res.id);
+      this.toast.success('Employee + login ban gaya');
+    } else {
+      await this.employeeSvc.add(base);
+      this.toast.success('Employee add ho gaya');
     }
     this.showForm.set(false);
   }
@@ -95,12 +106,11 @@ export class Employees {
   remove(e: Employee): void {
     this.confirm.ask({
       title: 'Delete employee?',
-      message: `"${e.name}" delete ho jayega (login bhi hat jayega).`,
+      message: `"${e.name}" ka record delete ho jayega.`,
       confirmLabel: 'Delete',
       danger: true,
-      onConfirm: () => {
-        this.employeeSvc.remove(e.id);
-        this.auth.removeStaffByName(e.name);
+      onConfirm: async () => {
+        await this.employeeSvc.remove(e.id);
         this.toast.success('Employee delete ho gaya');
       },
     });

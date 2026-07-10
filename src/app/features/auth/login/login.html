@@ -46,7 +46,9 @@
           </div>
         }
 
-        <app-button type="submit" variant="primary" [full]="true">Sign In</app-button>
+        <app-button type="submit" variant="primary" [full]="true" [disabled]="busy()">
+          {{ busy() ? 'Signing in…' : 'Sign In' }}
+        </app-button>
       </form>
 
       <!-- demo helpers -->

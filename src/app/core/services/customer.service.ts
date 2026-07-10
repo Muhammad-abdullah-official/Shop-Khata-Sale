@@ -1,62 +1,107 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Customer } from '../models';
+import { SupabaseService } from './supabase.service';
+import { AuthService } from './auth.service';
+
+const TABLE = 'customers';
+
+function toCustomer(r: Record<string, any>): Customer {
+  return {
+    id: r['id'],
+    name: r['name'],
+    phone: r['phone'],
+    address: r['address'],
+    joinedDate: r['joined_date'],
+    udhaarBalance: Number(r['udhaar_balance']),
+    totalOrders: Number(r['total_orders']),
+  };
+}
 
 @Injectable({ providedIn: 'root' })
 export class CustomerService {
-  private readonly _customers = signal<Customer[]>([
-    { id: 'c1', name: 'Ahmed Raza', phone: '0300-1112223', address: 'Gulshan Block 5, Karachi', totalOrders: 14, udhaarBalance: 3200, joinedDate: '2025-11-02' },
-    { id: 'c2', name: 'Sana Malik', phone: '0321-3334445', address: 'DHA Phase 6, Karachi', totalOrders: 8, udhaarBalance: 0, joinedDate: '2026-01-15' },
-    { id: 'c3', name: 'Bilal Hussain', phone: '0333-6667778', address: 'Nazimabad No.4, Karachi', totalOrders: 22, udhaarBalance: 7500, joinedDate: '2025-09-20' },
-    { id: 'c4', name: 'Fatima Noor', phone: '0345-9990001', address: 'Clifton Block 2, Karachi', totalOrders: 5, udhaarBalance: 1200, joinedDate: '2026-03-10' },
-    { id: 'c5', name: 'Zeeshan Iqbal', phone: '0301-2223334', address: 'Malir Cantt, Karachi', totalOrders: 11, udhaarBalance: 0, joinedDate: '2026-02-05' },
-  ]);
+  private readonly supabase = inject(SupabaseService);
+  private readonly auth = inject(AuthService);
 
+  private readonly _customers = signal<Customer[]>([]);
   readonly customers = this._customers.asReadonly();
   readonly totalCustomers = computed(() => this._customers().length);
   readonly totalUdhaar = computed(() =>
     this._customers().reduce((sum, c) => sum + c.udhaarBalance, 0),
   );
 
-  /** Adds a customer. Pass an id to keep it in sync with the auth user; returns the id. */
-  add(data: Omit<Customer, 'id' | 'totalOrders' | 'udhaarBalance'>, id = crypto.randomUUID()): string {
-    const customer: Customer = { ...data, id, totalOrders: 0, udhaarBalance: 0 };
-    this._customers.update((list) => [customer, ...list]);
-    return id;
+  constructor() {
+    effect(() => {
+      this.auth.currentUser();
+      void this.load();
+    });
+  }
+
+  async load(): Promise<void> {
+    if (!this.auth.isLoggedIn()) {
+      this._customers.set([]);
+      return;
+    }
+    // RLS: staff/owner see everyone, a customer sees only their own row
+    const { data, error } = await this.supabase.client
+      .from(TABLE)
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error || !data) return;
+    this._customers.set(data.map(toCustomer));
   }
 
   byId(id: string): Customer | undefined {
     return this._customers().find((c) => c.id === id);
   }
 
-  update(id: string, data: Pick<Customer, 'name' | 'phone' | 'address'>): void {
-    this._customers.update((list) =>
-      list.map((c) => (c.id === id ? { ...c, ...data } : c)),
-    );
+  /** Adds a walk-in customer. Returns the new id. */
+  async add(
+    data: Omit<Customer, 'id' | 'totalOrders' | 'udhaarBalance'>,
+    id?: string,
+  ): Promise<string | null> {
+    const row: Record<string, unknown> = {
+      name: data.name,
+      phone: data.phone,
+      address: data.address,
+      joined_date: data.joinedDate,
+    };
+    if (id) row['id'] = id;
+
+    const { data: res, error } = await this.supabase.client
+      .from(TABLE)
+      .insert(row)
+      .select('id')
+      .single();
+    if (error || !res) return null;
+    await this.load();
+    return res['id'];
   }
 
-  remove(id: string): void {
-    this._customers.update((list) => list.filter((c) => c.id !== id));
+  async update(id: string, data: Pick<Customer, 'name' | 'phone' | 'address'>): Promise<void> {
+    const { error } = await this.supabase.client.from(TABLE).update(data).eq('id', id);
+    if (!error) await this.load();
   }
 
-  /** Increase a customer's udhaar balance (e.g. an udhaar order). */
-  addUdhaar(customerId: string, amount: number): void {
-    this._customers.update((list) =>
-      list.map((c) =>
-        c.id === customerId
-          ? { ...c, udhaarBalance: c.udhaarBalance + amount, totalOrders: c.totalOrders + 1 }
-          : c,
-      ),
-    );
+  async remove(id: string): Promise<void> {
+    const { error } = await this.supabase.client.from(TABLE).delete().eq('id', id);
+    if (!error) await this.load();
   }
 
-  /** Reduce a customer's udhaar balance when a payment is received. */
-  reduceUdhaar(customerId: string, amount: number): void {
-    this._customers.update((list) =>
-      list.map((c) =>
-        c.id === customerId
-          ? { ...c, udhaarBalance: Math.max(0, c.udhaarBalance - amount) }
-          : c,
-      ),
-    );
+  /** Atomic udhaar change. Positive = udhaar diya, negative = payment received. */
+  private async adjust(customerId: string, delta: number, ordersDelta = 0): Promise<void> {
+    const { error } = await this.supabase.client.rpc('adjust_customer_udhaar', {
+      c_id: customerId,
+      p_delta: delta,
+      p_orders_delta: ordersDelta,
+    });
+    if (!error) await this.load();
+  }
+
+  addUdhaar(customerId: string, amount: number): Promise<void> {
+    return this.adjust(customerId, amount, 1);
+  }
+
+  reduceUdhaar(customerId: string, amount: number): Promise<void> {
+    return this.adjust(customerId, -amount, 0);
   }
 }
